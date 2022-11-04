@@ -18,6 +18,7 @@ using namespace m1;
 
 Lab2::Lab2()
 {
+    
 }
 
 
@@ -42,8 +43,15 @@ void Lab2::Init()
     {
         vector<VertexFormat> vertices
         {
-            VertexFormat(glm::vec3(-1, -1,  1), glm::vec3(0, 1, 1), glm::vec3(0.2, 0.8, 0.6)),
             // TODO(student): Complete the vertices data for the cube mesh
+            VertexFormat(glm::vec3(0, 0,  1), glm::vec3(0, 1, 1)),
+            VertexFormat(glm::vec3(1, 0,  1), glm::vec3(0, 1, 1)),
+            VertexFormat(glm::vec3(0, 1,  1), glm::vec3(0, 1, 1)),
+            VertexFormat(glm::vec3(1, 1,  1), glm::vec3(0, 1, 1)),
+            VertexFormat(glm::vec3(0, 0,  0), glm::vec3(0, 1, 1)),
+            VertexFormat(glm::vec3(1, 0,  0), glm::vec3(0, 1, 1)),
+            VertexFormat(glm::vec3(0, 1,  0), glm::vec3(0, 1, 1)),
+            VertexFormat(glm::vec3(1, 1,  0), glm::vec3(0, 1, 1))
 
         };
 
@@ -52,6 +60,16 @@ void Lab2::Init()
             0, 1, 2,    // indices for first triangle
             1, 3, 2,    // indices for second triangle
             // TODO(student): Complete indices data for the cube mesh
+            2, 3, 7, 
+            2, 7, 6,
+            1, 7, 3,
+            1, 5, 7,
+            6, 7, 4, 
+            7, 5, 4,
+            0, 4, 1,
+            1, 4, 5, 
+            2, 6, 4,
+            0, 2, 4
 
         };
 
@@ -60,16 +78,58 @@ void Lab2::Init()
 
         // Actually create the mesh from the data
         CreateMesh("cube_B", vertices, indices);
+        
     }
 
     // TODO(student): Create a tetrahedron mesh. You can create it with
     // only 4 vertices, or you can choose the harder route and create it
+    vector<VertexFormat> vertices2
+    {
+        // TODO(student): Complete the vertices data for the cube mesh
+        VertexFormat(glm::vec3(1, 0,  1), glm::vec3(0.4, 1.2, 0.3)), // 1
+        VertexFormat(glm::vec3(0, 1,  1), glm::vec3(0.1, 2, 3.7)), // 2
+        VertexFormat(glm::vec3(1, 1,  1), glm::vec3(1.2, 0.3, 0.1)), // 3
+        VertexFormat(glm::vec3(0, 0,  0), glm::vec3(1, 1, 1)), // 4
+        VertexFormat(glm::vec3(1, 1,  0), glm::vec3(255, 255, 2))  // 7
+
+    };
+
+    
+
+    vector<unsigned int> indices2 =
+    {
+        0, 1, 2,    
+        1, 3, 4,
+        0, 2, 4, 
+        1, 2, 4
+    };
     // with 12 vertices. Think about it, why would you want that, and how
     // would you do it? After all, a tetrahedron has only 4 vertices
     // by definition!
 
+    CreateMesh("tetraedru", vertices2, indices2);
+
     // TODO(student): Create a square using two triangles with
     // opposing vertex orientations.
+
+    vector<VertexFormat> vertices3
+    {
+        VertexFormat(glm::vec3(0, 0,  1), glm::vec3(0, 1, 1)),
+        VertexFormat(glm::vec3(1, 0,  1), glm::vec3(0, 1, 1)),
+        VertexFormat(glm::vec3(0, 1,  1), glm::vec3(0, 1, 1)),
+        VertexFormat(glm::vec3(1, 1,  1), glm::vec3(0, 1, 1)),
+
+    };
+
+
+
+    vector<unsigned int> indices3 =
+    {
+        0, 1, 2,
+        1, 2, 3
+    };
+
+    CreateMesh("square", vertices3, indices3);
 
 }
 
@@ -78,17 +138,21 @@ void Lab2::CreateMesh(const char *name, const std::vector<VertexFormat> &vertice
 {
     unsigned int VAO = 0;
     // TODO(student): Create the VAO and bind it
-
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
     unsigned int VBO = 0;
     // TODO(student): Create the VBO and bind it
-
+    GLuint VBO_ID;
+    glGenBuffers(1, &VBO_ID);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_ID);
     // TODO(student): Send vertices data into the VBO buffer
-
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
     unsigned int IBO = 0;
     // TODO(student): Create the IBO and bind it
-
+    glGenBuffers(1, &IBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
     // TODO(student): Send indices data into the IBO buffer
-
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indices.size(), &indices[0], GL_STATIC_DRAW);
     // ========================================================================
     // This section demonstrates how the GPU vertex shader program
     // receives data. It will be learned later, when GLSL shaders will be
@@ -114,6 +178,7 @@ void Lab2::CreateMesh(const char *name, const std::vector<VertexFormat> &vertice
     // ========================================================================
 
     // TODO(student): Unbind the VAO
+
 
     // Check for OpenGL errors
     if (GetOpenGLError() == GL_INVALID_OPERATION)
@@ -148,8 +213,10 @@ void Lab2::Update(float deltaTimeSeconds)
     glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
 
     // TODO(student): Enable face culling
+    glEnable(GL_CULL_FACE);
 
     // TODO(student): Set face custom culling. Use the `cullFace` variable.
+    glCullFace(cullFace);
 
     // Render an object using face normals for color
     RenderMesh(meshes["box"], shaders["VertexNormal"], glm::vec3(0, 0.5f, -1.5f), glm::vec3(0.75f));
@@ -158,10 +225,12 @@ void Lab2::Update(float deltaTimeSeconds)
     RenderMesh(meshes["cube_A"], shaders["VertexColor"], glm::vec3(-1.5f, 0.5f, 0), glm::vec3(0.25f));
 
     // TODO(student): Draw the mesh that was created with `CreateMesh()`
+    RenderMesh(meshes["cube_B"], shaders["VertexColor"], glm::vec3(2, 0, 1), glm::vec3(0.25f));
 
     // TODO(student): Draw the tetrahedron
-
+    RenderMesh(meshes["tetraedru"], shaders["VertexColor"], glm::vec3(-2, 0, 1), glm::vec3(0.25f));
     // TODO(student): Draw the square
+    RenderMesh(meshes["square"], shaders["VertexColor"], glm::vec3(1, 3, 2), glm::vec3(0.25f));
 
     // TODO(student): Disable face culling
 
@@ -204,6 +273,15 @@ void Lab2::OnKeyPress(int key, int mods)
         default:
             polygonMode = GL_LINE;
             break;
+        }
+    }
+
+    if (key == GLFW_KEY_F2) {
+        if (cullFace == GL_BACK) {
+            cullFace = GL_FRONT;
+        }
+        else {
+            cullFace = GL_BACK;
         }
     }
 }

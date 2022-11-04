@@ -5,15 +5,15 @@
 
 namespace m1
 {
-    class Lab3 : public gfxc::SimpleScene
+    class Tema1 : public gfxc::SimpleScene
     {
-     public:
-        Lab3();
-        ~Lab3();
+    public:
+        Tema1();
+        ~Tema1();
 
         void Init() override;
 
-     private:
+    private:
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
@@ -27,17 +27,19 @@ namespace m1
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
 
-     protected:
+    protected:
         float cx, cy;
-        glm::mat3 modelMatrix;
+        glm::mat3 transform_matrix;
         float translateX, translateY;
         float scaleX, scaleY;
         float angularStep;
-
+        float trX, trY;
+        bool depldr;
+        bool mare;
+        float transx;
+        float transy;
+        bool pul;
         // TODO(student): If you need any other class variables, define them here.
-        float translateXsecond, translateYsecond;
-        float t_2X, t_2Y;
-        bool goRight;
-        bool pulseIn;
+
     };
 }   // namespace m1

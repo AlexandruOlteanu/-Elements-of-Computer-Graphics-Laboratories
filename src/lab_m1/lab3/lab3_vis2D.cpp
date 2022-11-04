@@ -48,7 +48,7 @@ void Lab3_Vis2D::Init()
 
 
 // 2D visualization matrix
-glm::mat3 Lab3_Vis2D::VisualizationTransf2D(const LogicSpace & logicSpace, const ViewportSpace & viewSpace)
+glm::mat3 Lab3_Vis2D::VisualizationTransf2D(const LogicSpace& logicSpace, const ViewportSpace& viewSpace)
 {
     float sx, sy, tx, ty;
     sx = viewSpace.width / logicSpace.width;
@@ -64,7 +64,7 @@ glm::mat3 Lab3_Vis2D::VisualizationTransf2D(const LogicSpace & logicSpace, const
 
 
 // Uniform 2D visualization matrix (same scale factor on x and y axes)
-glm::mat3 Lab3_Vis2D::VisualizationTransf2DUnif(const LogicSpace & logicSpace, const ViewportSpace & viewSpace)
+glm::mat3 Lab3_Vis2D::VisualizationTransf2DUnif(const LogicSpace& logicSpace, const ViewportSpace& viewSpace)
 {
     float sx, sy, tx, ty, smin;
     sx = viewSpace.width / logicSpace.width;
@@ -83,7 +83,7 @@ glm::mat3 Lab3_Vis2D::VisualizationTransf2DUnif(const LogicSpace & logicSpace, c
 }
 
 
-void Lab3_Vis2D::SetViewportArea(const ViewportSpace & viewSpace, glm::vec3 colorColor, bool clear)
+void Lab3_Vis2D::SetViewportArea(const ViewportSpace& viewSpace, glm::vec3 colorColor, bool clear)
 {
     glViewport(viewSpace.x, viewSpace.y, viewSpace.width, viewSpace.height);
 
@@ -167,9 +167,46 @@ void Lab3_Vis2D::DrawScene(glm::mat3 visMatrix)
 void Lab3_Vis2D::OnInputUpdate(float deltaTime, int mods)
 {
     // TODO(student): Move the logic window with W, A, S, D (up, left, down, right)
+    if (window->KeyHold(GLFW_KEY_W))//mergi pe Oy
+    {
+        logicSpace.y += deltaTime;
+    }
+    if (window->KeyHold(GLFW_KEY_S))
+    {
+        logicSpace.y -= deltaTime;
+    }
+    if (window->KeyHold(GLFW_KEY_D))//mergi pe Ox
+    {
+        logicSpace.x += deltaTime;
+    }
+    if (window->KeyHold(GLFW_KEY_A))
+    {
+        logicSpace.x -= deltaTime;
+    }
+
 
     // TODO(student): Zoom in and zoom out logic window with Z and X
+    if (window->KeyHold(GLFW_KEY_Z)) {
+        //logicSpace.x += logicSpace.width / 2;//te duci pe adancime 
+        //logicSpace.y += logicSpace.height / 2;
 
+        logicSpace.height += deltaTime * 5;
+        logicSpace.width += deltaTime * 5;
+        logicSpace.x -= deltaTime / 2;
+        logicSpace.y -= deltaTime / 2;
+    }
+    if (window->KeyHold(GLFW_KEY_X))
+    {
+
+
+        //logicSpace.x += logicSpace.width / 2;
+        //logicSpace.y += logicSpace.height / 2;
+
+        logicSpace.height -= deltaTime * 5;
+        logicSpace.width -= deltaTime * 5;
+        logicSpace.x += deltaTime / 2;
+        logicSpace.y += deltaTime / 2;
+    }
 }
 
 
