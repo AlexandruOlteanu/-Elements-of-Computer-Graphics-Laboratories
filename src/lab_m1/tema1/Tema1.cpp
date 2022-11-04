@@ -30,7 +30,9 @@ double wing_side;
 double body_side;
 double beak_side;
 double radius;
-
+double beak_X, beak_Y;
+double duck_angle;
+int p;
 
 void Tema1::Init()
 {
@@ -46,27 +48,15 @@ void Tema1::Init()
     wing_side = 60;
     body_side = 120;
     beak_side = 16;
+    beak_X = 263;
+    beak_Y = 407;
     radius = 45;
-    cx = 2;
+    duck_angle = -45;
+    p = 1;
 
-    // TODO(student): Compute coordinates of a square's center, and store
-    // then in the `cx` and `cy` class variables (see the header). Use
-    // `corner` and `squareSide`. These two class variables will be used
-    // in the `Update()` function. Think about it, why do you need them?
-    //cx = corner.x + squareSide / 2;
-    //cy = corner.y + squareSide / 2;
-    // Initialize tx and ty (the translation steps)
-    translateX = 0;
-    translateY = 0;
-    float tranx = 0;
-    float trany = 0;
     // Initialize sx and sy (the scale factors)
-    scaleX = 1;
-    scaleY = 1;
     trX = 0;
     trY = 0;
-    int pul = false;
-    depldr = false;
     // Initialize angularStep
     angularStep = 0;
 
@@ -104,25 +94,23 @@ double grad_to_radian(double grad) {
 }
 
 
-void Tema1::Update(float deltaTimeSeconds)
-{
-    // TODO(student): Update steps for translation, rotation and scale,
-    // in order to create animations. Use the class variables in the
-    // class header, and if you need more of them to complete the task,
-    // add them over there!
-    /*if (trX < 400)
+void Tema1::Update(float deltaTimeSeconds) {
+
+    if (trX < 1000)
     {
         trX += deltaTimeSeconds * 100;
     }
-    if (trY < 400)
+    if (trY < 300)
     {
         trY += deltaTimeSeconds * 100;
-    }*/
+    }
 
     transform_matrix = glm::mat3(1);
     transform_matrix *= transform2D::Translate(trX, trY);
     transform_matrix *= transform2D::Translate(260, 330);
-
+    transform_matrix *= transform2D::Translate(beak_X - 260, beak_Y - 330);
+    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
+    transform_matrix *= transform2D::Translate(-beak_X + 260, -beak_Y + 330);
     RenderMesh2D(meshes["head"], shaders["VertexColor"], transform_matrix);
 
 
@@ -130,18 +118,25 @@ void Tema1::Update(float deltaTimeSeconds)
     transform_matrix = glm::mat3(1);
     transform_matrix *= transform2D::Translate(trX, trY);
     transform_matrix *= transform2D::Translate(200, 100);
+    transform_matrix *= transform2D::Translate(beak_X - 200, beak_Y - 100);
+    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
+    transform_matrix *= transform2D::Translate(-beak_X + 200, -beak_Y + 100);
     RenderMesh2D(meshes["body"], shaders["VertexColor"], transform_matrix);
 
 
     transform_matrix = glm::mat3(1);
     transform_matrix *= transform2D::Translate(trX, trY);
-    if (angularStep < 0.1)
+    if (angularStep < 0.4)
         angularStep += deltaTimeSeconds;
-    else if (angularStep > 0.1)
+    else if (angularStep > 0.4)
         angularStep = -angularStep;
-    transform_matrix *= transform2D::Translate(250, 210);
-    //transform_matrix *= transform2D::Rotate(angularStep);
+    transform_matrix *= transform2D::Translate(250, 270);
+    transform_matrix *= transform2D::Translate(beak_X - 250, beak_Y - 270);
+    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
+    transform_matrix *= transform2D::Translate(-beak_X + 250, -beak_Y + 270);
     transform_matrix *= transform2D::Rotate(grad_to_radian(90));
+    transform_matrix *= transform2D::Rotate(-angularStep);
+
 
 
     RenderMesh2D(meshes["first_wing"], shaders["VertexColor"], transform_matrix);
@@ -149,8 +144,12 @@ void Tema1::Update(float deltaTimeSeconds)
     transform_matrix = glm::mat3(1);
     transform_matrix *= transform2D::Translate(trX, trY);
     transform_matrix *= transform2D::Translate(270, 270);
-    //transform_matrix *= transform2D::Rotate(angularStep);
+    transform_matrix *= transform2D::Translate(beak_X - 270, beak_Y - 270);
+    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
+    transform_matrix *= transform2D::Translate(-beak_X + 270, -beak_Y + 270);
     transform_matrix *= transform2D::Rotate(grad_to_radian(-90));
+    transform_matrix *= transform2D::Rotate(angularStep);
+
 
 
 
@@ -159,6 +158,9 @@ void Tema1::Update(float deltaTimeSeconds)
     transform_matrix = glm::mat3(1);
     transform_matrix *= transform2D::Translate(trX, trY);
     transform_matrix *= transform2D::Translate(255, 375);
+    transform_matrix *= transform2D::Translate(beak_X - 255, beak_Y - 375);
+    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
+    transform_matrix *= transform2D::Translate(-beak_X + 255, -beak_Y + 375);
     RenderMesh2D(meshes["beak"], shaders["VertexColor"], transform_matrix);
 }
 
