@@ -14,20 +14,20 @@ Mesh* Triangle::CreateTriangle(const std::string& name, glm::vec3 leftBottomCorn
 
     if (type == "right") {
         if (angle_type == 1) {
-            vertices.push_back(VertexFormat(corner + glm::vec3(0, 2 * length, 0), color));
-            vertices.push_back(VertexFormat(corner + glm::vec3(-length, 0, 0), color));
+            vertices.push_back(VertexFormat(corner + glm::vec3(2 * length, 0, 0), color));
+            vertices.push_back(VertexFormat(corner + glm::vec3(0, -length, 0), color));
             vertices.push_back(VertexFormat(corner, color));
         }
         else {
-            vertices.push_back(VertexFormat(corner + glm::vec3(0, 2 * length, 0), color));
-            vertices.push_back(VertexFormat(corner + glm::vec3(length, 0, 0), color));
+            vertices.push_back(VertexFormat(corner + glm::vec3(2 * length, 0, 0), color));
+            vertices.push_back(VertexFormat(corner + glm::vec3(0, length, 0), color));
             vertices.push_back(VertexFormat(corner, color));
         }
     }
 
     if (type == "isoscel") {
-        vertices.push_back(VertexFormat(corner + glm::vec3(length, 0, 0), color));
-        vertices.push_back(VertexFormat(corner + glm::vec3(length / 2, 2 * length, 0), color));
+        vertices.push_back(VertexFormat(corner + glm::vec3(0, length, 0), color));
+        vertices.push_back(VertexFormat(corner + glm::vec3(2 * length, length / 2, 0), color));
         vertices.push_back(VertexFormat(corner, color));
     }
     

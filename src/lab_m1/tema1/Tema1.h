@@ -29,7 +29,6 @@ namespace m1
 
     protected:
         float cx, cy;
-        glm::mat3 transform_matrix;
         float translateX, translateY;
         float scaleX, scaleY;
         float angularStep;

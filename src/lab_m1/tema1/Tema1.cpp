@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
+#include <random>
 
 #include "lab_m1/tema1/transform2D.h"
 #include "lab_m1/tema1/Triangle.h"
@@ -26,13 +28,24 @@ Tema1::~Tema1()
 {
 }
 
+double screen_ratio;
 double wing_side;
 double body_side;
 double beak_side;
 double radius;
 double beak_X, beak_Y;
 double duck_angle;
-int p;
+double fly_angle;
+bool type;
+bool fly_type;
+double initial_spawn_x;
+double initial_spawn_y;
+
+double coeficient_cos = 1;
+double coeficient_sin = 1;
+
+mt19937 rng((unsigned int)chrono::steady_clock::now().time_since_epoch().count());
+
 
 void Tema1::Init()
 {
@@ -45,20 +58,36 @@ void Tema1::Init()
     GetCameraInput()->SetActive(false);
 
     glm::vec3 corner = glm::vec3(0, 0, 0);
-    wing_side = 60;
-    body_side = 120;
-    beak_side = 16;
-    beak_X = 263;
-    beak_Y = 407;
-    radius = 45;
-    duck_angle = -45;
-    p = 1;
+
+    // Default : 16.41
+    screen_ratio = resolution.x / 16.41;
+    cout << resolution.x << '\n';
+    wing_side = screen_ratio * 0.4871;
+    body_side = screen_ratio;
+    beak_side = screen_ratio * 0.1333;
+    beak_X = 0;
+    beak_Y = 0;
+    radius = screen_ratio * 0.3666;
+    type = 0;
+    fly_type = 0;
+    srand(time(0));
+
+    initial_spawn_x = rng() % (resolution.x - 200);
+    if (initial_spawn_x < 200) {
+        initial_spawn_x = 200;
+    }
+    initial_spawn_y = 50;
+
+    duck_angle = rng() % 120 + 30;
+    /*if (duck_angle > 90) {
+        coeficient_cos = -coeficient_cos;
+    }*/
 
     // Initialize sx and sy (the scale factors)
     trX = 0;
     trY = 0;
     // Initialize angularStep
-    angularStep = 0;
+    fly_angle = 0;
 
     Mesh* head = Circle::CreateCircle("head", 0, 0, radius, glm::vec3(0.0f, 0.2f, 0.0f), true);
     AddMeshToList(head);
@@ -96,72 +125,73 @@ double grad_to_radian(double grad) {
 
 void Tema1::Update(float deltaTimeSeconds) {
 
-    if (trX < 1000)
-    {
-        trX += deltaTimeSeconds * 100;
+    glm::ivec2 resolution = window->GetResolution();
+    double beak_top_x = initial_spawn_x + screen_ratio * 2.08 + 2 * beak_side;
+    double beak_top_y = initial_spawn_y + screen_ratio * 0.43 + beak_side / 2;
+
+    if (!fly_type) {
+        fly_angle += deltaTimeSeconds;
     }
-    if (trY < 300)
-    {
-        trY += deltaTimeSeconds * 100;
+    else {
+        fly_angle -= deltaTimeSeconds;
     }
 
-    transform_matrix = glm::mat3(1);
-    transform_matrix *= transform2D::Translate(trX, trY);
-    transform_matrix *= transform2D::Translate(260, 330);
-    transform_matrix *= transform2D::Translate(beak_X - 260, beak_Y - 330);
-    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
-    transform_matrix *= transform2D::Translate(-beak_X + 260, -beak_Y + 330);
-    RenderMesh2D(meshes["head"], shaders["VertexColor"], transform_matrix);
+    if (fly_angle > 0.35) {
+        fly_type ^= 1;
+    }
+    if (fly_angle < -0.35) {
+        fly_type ^= 1;
+    }
 
+    trX += cos(grad_to_radian(duck_angle)) * deltaTimeSeconds * 100;
+    trY += sin(grad_to_radian(duck_angle)) * deltaTimeSeconds * 100;
+    if (beak_top_x + trX < 0 || beak_top_x + trX > resolution.x) {
+        duck_angle = 180 - duck_angle;
+    }
+    else if (beak_top_y + trY < 0 || beak_top_y + trY > resolution.y) {
+        duck_angle = -duck_angle;
+    }
+    
+    glm::mat3 main_transformation = glm::mat3(1);
+    main_transformation *= transform2D::Translate(trX, trY);
+    main_transformation *= transform2D::Translate(initial_spawn_x, initial_spawn_y);
+    main_transformation *= transform2D::Translate(beak_top_x - initial_spawn_x, beak_top_y - initial_spawn_y);
+    main_transformation *= transform2D::Rotate(grad_to_radian(duck_angle));
+    main_transformation *= transform2D::Translate(-beak_top_x + initial_spawn_x, -beak_top_y + initial_spawn_y);
 
+    glm::mat3 body_transformation = glm::mat3(1);
+    body_transformation = main_transformation;
 
-    transform_matrix = glm::mat3(1);
-    transform_matrix *= transform2D::Translate(trX, trY);
-    transform_matrix *= transform2D::Translate(200, 100);
-    transform_matrix *= transform2D::Translate(beak_X - 200, beak_Y - 100);
-    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
-    transform_matrix *= transform2D::Translate(-beak_X + 200, -beak_Y + 100);
-    RenderMesh2D(meshes["body"], shaders["VertexColor"], transform_matrix);
+    glm::mat3 beak_tranformation = glm::mat3(1);
+    beak_tranformation = body_transformation;
+    beak_tranformation *= transform2D::Translate(screen_ratio * 2.08, screen_ratio * 0.43);
 
+    glm::mat3 head_transformation = glm::mat3(1);
+    head_transformation = body_transformation;
+    head_transformation *= transform2D::Translate(screen_ratio * 1.72, screen_ratio * 0.5);
 
-    transform_matrix = glm::mat3(1);
-    transform_matrix *= transform2D::Translate(trX, trY);
-    if (angularStep < 0.4)
-        angularStep += deltaTimeSeconds;
-    else if (angularStep > 0.4)
-        angularStep = -angularStep;
-    transform_matrix *= transform2D::Translate(250, 270);
-    transform_matrix *= transform2D::Translate(beak_X - 250, beak_Y - 270);
-    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
-    transform_matrix *= transform2D::Translate(-beak_X + 250, -beak_Y + 270);
-    transform_matrix *= transform2D::Rotate(grad_to_radian(90));
-    transform_matrix *= transform2D::Rotate(-angularStep);
+    glm::mat3 first_wing_transformation = glm::mat3(1);
+    first_wing_transformation = body_transformation;
+    first_wing_transformation *= transform2D::Translate(screen_ratio * 1.2, screen_ratio * 0.5);
+    first_wing_transformation *= transform2D::Rotate(grad_to_radian(-90));
+    first_wing_transformation *= transform2D::Rotate(-fly_angle);
+    
 
+    glm::mat3 second_wing_transformation = glm::mat3(1);
+    second_wing_transformation = body_transformation;
+    second_wing_transformation *= transform2D::Translate(screen_ratio * 1.2, screen_ratio * 0.5);
+    second_wing_transformation *= transform2D::Rotate(grad_to_radian(90));
+    second_wing_transformation *= transform2D::Rotate(fly_angle);
 
+    RenderMesh2D(meshes["beak"], shaders["VertexColor"], beak_tranformation);
 
-    RenderMesh2D(meshes["first_wing"], shaders["VertexColor"], transform_matrix);
+    RenderMesh2D(meshes["head"], shaders["VertexColor"], head_transformation);
 
-    transform_matrix = glm::mat3(1);
-    transform_matrix *= transform2D::Translate(trX, trY);
-    transform_matrix *= transform2D::Translate(270, 270);
-    transform_matrix *= transform2D::Translate(beak_X - 270, beak_Y - 270);
-    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
-    transform_matrix *= transform2D::Translate(-beak_X + 270, -beak_Y + 270);
-    transform_matrix *= transform2D::Rotate(grad_to_radian(-90));
-    transform_matrix *= transform2D::Rotate(angularStep);
+    RenderMesh2D(meshes["body"], shaders["VertexColor"], body_transformation);
 
+    RenderMesh2D(meshes["first_wing"], shaders["VertexColor"], first_wing_transformation);
 
-
-
-    RenderMesh2D(meshes["second_wing"], shaders["VertexColor"], transform_matrix);
-
-    transform_matrix = glm::mat3(1);
-    transform_matrix *= transform2D::Translate(trX, trY);
-    transform_matrix *= transform2D::Translate(255, 375);
-    transform_matrix *= transform2D::Translate(beak_X - 255, beak_Y - 375);
-    transform_matrix *= transform2D::Rotate(grad_to_radian(duck_angle));
-    transform_matrix *= transform2D::Translate(-beak_X + 255, -beak_Y + 375);
-    RenderMesh2D(meshes["beak"], shaders["VertexColor"], transform_matrix);
+    RenderMesh2D(meshes["second_wing"], shaders["VertexColor"], second_wing_transformation);
 }
 
 

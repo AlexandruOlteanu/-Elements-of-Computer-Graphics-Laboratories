@@ -7,7 +7,7 @@ namespace m1
 {
     class Lab4 : public gfxc::SimpleScene
     {
-     public:
+    public:
         struct ViewportArea
         {
             ViewportArea() : x(0), y(0), width(1), height(1) {}
@@ -24,10 +24,11 @@ namespace m1
 
         void Init() override;
 
-     private:
+    private:
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
+        void RenderScene();
 
         void OnInputUpdate(float deltaTime, int mods) override;
         void OnKeyPress(int key, int mods) override;
@@ -38,14 +39,18 @@ namespace m1
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
 
-        void RenderScene();
-     protected:
+    protected:
         glm::mat4 modelMatrix;
+        glm::vec3 endPos, midPos, startPos;
         float translateX, translateY, translateZ;
         float scaleX, scaleY, scaleZ;
         float angularStepOX, angularStepOY, angularStepOZ;
         GLenum polygonMode;
+
+        GLfloat translateZSine, translateXSine, translateYSine;
+        GLfloat angleX, angleZ;
+        GLfloat posX, posZ, angle;
+        GLfloat angleJump;
         ViewportArea miniViewportArea;
     };
 }   // namespace m1
-
