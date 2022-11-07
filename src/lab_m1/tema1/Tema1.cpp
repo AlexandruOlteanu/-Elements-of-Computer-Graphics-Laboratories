@@ -40,9 +40,13 @@ bool type;
 bool fly_type;
 double initial_spawn_x;
 double initial_spawn_y;
-
-double coeficient_cos = 1;
-double coeficient_sin = 1;
+int number_of_lifes;
+double life_radius;
+vector<Mesh*> lifes;
+vector<bool> available;
+double time_elapsed = 0;
+double time_till_escape;
+double duck_speed;
 
 mt19937 rng((unsigned int)chrono::steady_clock::now().time_since_epoch().count());
 
@@ -61,7 +65,6 @@ void Tema1::Init()
 
     // Default : 16.41
     screen_ratio = resolution.x / 16.41;
-    cout << resolution.x << '\n';
     wing_side = screen_ratio * 0.4871;
     body_side = screen_ratio;
     beak_side = screen_ratio * 0.1333;
@@ -70,7 +73,8 @@ void Tema1::Init()
     radius = screen_ratio * 0.3666;
     type = 0;
     fly_type = 0;
-    srand(time(0));
+    duck_speed = 150;
+    time_till_escape = 20;
 
     initial_spawn_x = rng() % (resolution.x - 200);
     if (initial_spawn_x < 200) {
@@ -79,15 +83,19 @@ void Tema1::Init()
     initial_spawn_y = 50;
 
     duck_angle = rng() % 120 + 30;
-    /*if (duck_angle > 90) {
-        coeficient_cos = -coeficient_cos;
-    }*/
-
-    // Initialize sx and sy (the scale factors)
     trX = 0;
     trY = 0;
     // Initialize angularStep
     fly_angle = 0;
+    number_of_lifes = 3;
+    life_radius = 17;
+
+    for (int i = 0; i < number_of_lifes; ++i) {
+        Mesh* life = Circle::CreateCircle("life_" + to_string(i), 0, 0, life_radius, glm::vec3(1, 0, 0), true);
+        lifes.push_back(life);
+        available.push_back(true);
+        AddMeshToList(life);
+    }
 
     Mesh* head = Circle::CreateCircle("head", 0, 0, radius, glm::vec3(0.0f, 0.2f, 0.0f), true);
     AddMeshToList(head);
@@ -125,6 +133,7 @@ double grad_to_radian(double grad) {
 
 void Tema1::Update(float deltaTimeSeconds) {
 
+
     glm::ivec2 resolution = window->GetResolution();
     double beak_top_x = initial_spawn_x + screen_ratio * 2.08 + 2 * beak_side;
     double beak_top_y = initial_spawn_y + screen_ratio * 0.43 + beak_side / 2;
@@ -143,15 +152,41 @@ void Tema1::Update(float deltaTimeSeconds) {
         fly_type ^= 1;
     }
 
-    trX += cos(grad_to_radian(duck_angle)) * deltaTimeSeconds * 100;
-    trY += sin(grad_to_radian(duck_angle)) * deltaTimeSeconds * 100;
-    if (beak_top_x + trX < 0 || beak_top_x + trX > resolution.x) {
-        duck_angle = 180 - duck_angle;
-    }
-    else if (beak_top_y + trY < 0 || beak_top_y + trY > resolution.y) {
-        duck_angle = -duck_angle;
-    }
+    time_elapsed += deltaTimeSeconds;
+    cout << time_elapsed << '\n';
     
+    trX += cos(grad_to_radian(duck_angle)) * deltaTimeSeconds * duck_speed;
+    trY += sin(grad_to_radian(duck_angle)) * deltaTimeSeconds * duck_speed;
+
+    if (time_elapsed > time_till_escape) {
+        duck_angle = 90;
+        if (time_elapsed > time_till_escape + 3) {
+            time_elapsed = 0;
+            trX = 0, trY = 0;
+            initial_spawn_x = rng() % (resolution.x - 200);
+            if (initial_spawn_x < 200) {
+                initial_spawn_x = 200;
+            }
+            initial_spawn_y = 50;
+            duck_angle = rng() % 120 + 30;
+            int sz = available.size();
+            for (int i = sz - 1; i >= 0; --i) {
+                if (available[i]) {
+                    available[i] = false;
+                    break;
+                }
+            }
+        }
+    }
+    else {
+
+        if (beak_top_x + trX < 0 || beak_top_x + trX > resolution.x) {
+            duck_angle = 180 - duck_angle;
+        }
+        else if (beak_top_y + trY < 0 || beak_top_y + trY > resolution.y) {
+            duck_angle = -duck_angle;
+        }
+    }
     glm::mat3 main_transformation = glm::mat3(1);
     main_transformation *= transform2D::Translate(trX, trY);
     main_transformation *= transform2D::Translate(initial_spawn_x, initial_spawn_y);
@@ -183,6 +218,18 @@ void Tema1::Update(float deltaTimeSeconds) {
     second_wing_transformation *= transform2D::Rotate(grad_to_radian(90));
     second_wing_transformation *= transform2D::Rotate(fly_angle);
 
+    int contor = 0;
+    for (auto life : lifes) {
+        glm::mat3 life_transformation = glm::mat3(1);
+        life_transformation *= transform2D::Translate(resolution.x - 300, resolution.y - 50);
+        life_transformation *= transform2D::Translate(contor * 50, 0);
+        if (!available[contor]) {
+            continue;
+        }
+        ++contor;
+        RenderMesh2D(meshes[life->GetMeshID()], shaders["VertexColor"], life_transformation);
+    }
+
     RenderMesh2D(meshes["beak"], shaders["VertexColor"], beak_tranformation);
 
     RenderMesh2D(meshes["head"], shaders["VertexColor"], head_transformation);
@@ -192,6 +239,9 @@ void Tema1::Update(float deltaTimeSeconds) {
     RenderMesh2D(meshes["first_wing"], shaders["VertexColor"], first_wing_transformation);
 
     RenderMesh2D(meshes["second_wing"], shaders["VertexColor"], second_wing_transformation);
+
+    
+
 }
 
 
