@@ -32,7 +32,6 @@ namespace m1
         float translateX, translateY;
         float scaleX, scaleY;
         float angularStep;
-        float trX, trY;
         bool depldr;
         bool mare;
         float transx;
