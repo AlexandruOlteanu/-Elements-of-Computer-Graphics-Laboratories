@@ -60,6 +60,7 @@ bool hit_duck;
 double hit_distance;
 double background_l, background_L;
 double score_border_l, score_border_L;
+bool terminated = false;
 
 struct intersection_rectangle {
     double x1, y1, x2, y2, x3, y3, x4, y4;
@@ -75,6 +76,9 @@ void remove_life() {
             available_life[i] = false;
             break;
         }
+    }
+    if (!available_life[0]) {
+        terminated = true;
     }
 }
 
@@ -109,10 +113,18 @@ void init_duck_values(glm::ivec2 resolution) {
 
 void increase_score() {
     int sz = available_scores.size();
+    int nr = 0;
     for (int i = 0; i < sz; ++i) {
         if (!available_scores[i]) {
             available_scores[i] = true;
+            nr = i;
             break;
+        }
+    }
+    if (nr == sz - 1) {
+        for (int i = 0; i < sz; ++i) {
+           available_scores[i] = false;
+           time_till_escape -= 5.0 / 100 * time_till_escape;
         }
     }
 }
@@ -163,7 +175,7 @@ void Tema1::Init()
     background_L = 1280;
     score_border_l = 28;
     score_border_L = 280;
-    
+
     for (int i = 0; i < number_of_lifes; ++i) {
         Mesh* life = Circle::CreateCircle("life_" + to_string(i), 0, 0, life_radius, glm::vec3(1, 0, 0), true);
         lifes.push_back(life);
@@ -231,12 +243,18 @@ double calculate_distance(double x1, double y1, double x2, double y2) {
 
 void Tema1::Update(float deltaTimeSeconds) {
 
+    if (terminated) {
+        return;
+    }
+
     glm::ivec2 resolution = window->GetResolution();
     double beak_top_x = initial_spawn_x + screen_ratio * 2.08 + 2 * beak_side;
     double beak_top_y = initial_spawn_y + screen_ratio * 0.43 + beak_side / 2;
 
     double body_center_x = (initial_spawn_x + beak_top_x) / 2;
     double body_center_y = beak_top_y;
+
+    duck_speed += deltaTimeSeconds * 10;
 
     if (!fly_type) {
         fly_angle += deltaTimeSeconds;
@@ -253,7 +271,7 @@ void Tema1::Update(float deltaTimeSeconds) {
     }
 
     time_elapsed += deltaTimeSeconds;
-    
+
     direction_X += cos(grad_to_radian(duck_angle)) * deltaTimeSeconds * duck_speed;
     direction_Y += sin(grad_to_radian(duck_angle)) * deltaTimeSeconds * duck_speed;
 
@@ -289,7 +307,7 @@ void Tema1::Update(float deltaTimeSeconds) {
             hit_duck = false;
         }
     }
-    
+
     glm::mat3 main_transformation = glm::mat3(1);
     main_transformation *= transform2D::Translate(direction_X, direction_Y);
     main_transformation *= transform2D::Translate(initial_spawn_x, initial_spawn_y);
@@ -313,7 +331,7 @@ void Tema1::Update(float deltaTimeSeconds) {
     first_wing_transformation *= transform2D::Translate(screen_ratio * 1.2, screen_ratio * 0.5);
     first_wing_transformation *= transform2D::Rotate(grad_to_radian(-90));
     first_wing_transformation *= transform2D::Rotate(-fly_angle);
-    
+
 
     glm::mat3 second_wing_transformation = glm::mat3(1);
     second_wing_transformation = body_transformation;
@@ -332,7 +350,7 @@ void Tema1::Update(float deltaTimeSeconds) {
         ++contor;
         RenderMesh2D(meshes[life->GetMeshID()], shaders["VertexColor"], life_transformation);
     }
-    
+
     contor = 0;
     for (auto bullet : bullets) {
         glm::mat3 bullet_transformation = glm::mat3(1);
