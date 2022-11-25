@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "lab_m1/tema2/transform3D.h"
+#include "lab_m1/tema2/camera.h"
 
 using namespace std;
 using namespace m1;
@@ -28,11 +29,7 @@ Tema2::~Tema2()
 
 void Tema2::Init()
 {
-	polygonMode = GL_FILL;
-
-	Mesh* mesh = new Mesh("box");
-	mesh->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::MODELS, "primitives"), "box.obj");
-	meshes[mesh->GetMeshID()] = mesh;
+	camera = new Camera();
 
 	vector<VertexFormat> vertices
 	{
@@ -108,36 +105,12 @@ void Tema2::Init()
 	translateY = 0;
 	translateZ = 0;
 
-	translateXSine = 0.f;
-	translateYSine = 0.f;
-	translateZSine = 0.f;
-
-	// initialize sx, sy and sz (the scale factors)
-	scaleX = 1.f;
-	scaleY = 1.f;
-	scaleZ = 1.f;
-
-	// initialize angularSteps
-	angularStepOX = 0.f;
-	angularStepOY = 0.f;
-	angularStepOZ = 0.f;
-
-
-
-	angleX = 0.f;
-	angleZ = 0.f;
-	angle = 5.f;
-
-	posX = cos(angle);
-	posZ = sin(angle);
-
-	angleJump = 0.f;
-
-	startPos = glm::vec3(1.f, 1.f, 1.f);
-	endPos = glm::vec3(1.f + 4.f, 1.f, 1.f);
+	projectionMatrix = glm::perspective(RADIANS(60), window->props.aspectRatio, 0.01f, 200.0f);
 
 	glm::ivec2 resolution = window->GetResolution();
 	miniViewportArea = ViewportArea(50, 50, resolution.x / 5.f, resolution.y / 5.f);
+
+
 }
 
 
@@ -152,45 +125,22 @@ void Tema2::FrameStart()
 	glViewport(0, 0, resolution.x, resolution.y);
 }
 
-void Tema2::RenderScene()
-{
-
-	/*modelMatrix = glm::mat4(1);
-	modelMatrix *= transform3D::Translate(-2.5f, 0.5f, 1.5f);
-	modelMatrix *= transform3D::Translate(translateX, translateY, translateZ);
-	RenderMesh(meshes["box"], shaders["VertexNormal"], modelMatrix);
-
-	modelMatrix = glm::mat4(1);
-	modelMatrix *= transform3D::Translate(0.0f, 0.5f, -1.5f);
-	modelMatrix *= transform3D::Scale(scaleX, scaleY, scaleZ);
-	RenderMesh(meshes["box"], shaders["Simple"], modelMatrix);
-
-	modelMatrix = glm::mat4(1);
-	modelMatrix *= transform3D::Translate(2.5f, 0.5f, 1.5f);
-	modelMatrix *= transform3D::RotateOX(angularStepOX);
-	modelMatrix *= transform3D::RotateOY(angularStepOY);
-	modelMatrix *= transform3D::RotateOZ(angularStepOZ);
-	RenderMesh(meshes["box"], shaders["VertexNormal"], modelMatrix);*/
-}
-
 void Tema2::Update(float deltaTimeSeconds)
 {
-	glLineWidth(3);
-	glPointSize(5);
-	glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
-
+	camera->Set(glm::vec3(0, 3, 4.5f), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	//RenderMesh(meshes["ground"], shaders["VertexNormal"], glm::vec3(-25, 0, -25), glm::vec3(0.75f));
 	main_transform = glm::mat4(1);
 	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
+	camera->MoveForward(-translateZ);
+	camera->TranslateRight(translateX);
 	main_transform *= transform3D::Translate(0.5, 0, 0);
+	camera->TranslateRight(0.5);
 	main_transform *= transform3D::RotateOY(rotation_angle_OY);
 	main_transform *= transform3D::Translate(-0.5, 0, 0);
-	RenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
-
-
-
-	DrawCoordinateSystem();
-	RenderScene();
+	camera->RotateFirstPerson_OY(rotation_angle_OY);
+	camera->TranslateRight(cos(rotation_angle_OY) * deltaTimeSeconds * 5);
+	MyRenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
+	FrameEnd();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
@@ -203,18 +153,24 @@ void Tema2::Update(float deltaTimeSeconds)
 	main_transform *= transform3D::RotateOY(rotation_angle_OY);
 	main_transform *= transform3D::Translate(-0.5, 0, -translateZ);
 	RenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
-	//DrawCoordinateSystem();
-
-	RenderScene();
-
-
-
 }
 
 
 void Tema2::FrameEnd()
 {
-	DrawCoordinateSystem();
+	DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+}
+
+void Tema2::MyRenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
+{
+	if (!mesh || !shader || !shader->program)
+	    return;
+
+	shader->Use();
+	glUniformMatrix4fv(shader->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(camera->GetViewMatrix()));
+	glUniformMatrix4fv(shader->loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+	glUniformMatrix4fv(shader->loc_model_matrix, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+	mesh->Render();
 }
 
 
@@ -263,102 +219,42 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 				rotation_angle_OY += deltaTime;
 			}
 		}
-		if (window->KeyHold(GLFW_KEY_R))
-		{
-			translateY += 1.5 * deltaTime;
-		}
-		if (window->KeyHold(GLFW_KEY_F))
-		{
-			translateY -= 1.5 * deltaTime;
-		}
 	}
 
-	if (window->KeyHold(GLFW_KEY_1))
+	if (window->MouseHold(GLFW_MOUSE_BUTTON_RIGHT))
 	{
-		scaleX += deltaTime;
-		scaleY += deltaTime;
-		scaleZ += deltaTime;
-	}
-	if (window->KeyHold(GLFW_KEY_2))
-	{
-		scaleX -= deltaTime;
-		scaleY -= deltaTime;
-		scaleZ -= deltaTime;
-	}
+		float vitezaCamera = 3.0f;
 
-	if (window->KeyHold(GLFW_KEY_3))
-	{
-		angularStepOX += deltaTime;
-	}
-	if (window->KeyHold(GLFW_KEY_4))
-	{
-		angularStepOX -= deltaTime;
-	}
-	if (window->KeyHold(GLFW_KEY_5))
-	{
-		angularStepOY += deltaTime;
-	}
-	if (window->KeyHold(GLFW_KEY_6))
-	{
-		angularStepOY -= deltaTime;
-	}
-	if (window->KeyHold(GLFW_KEY_7))
-	{
-		angularStepOZ += deltaTime;
-	}
-	if (window->KeyHold(GLFW_KEY_8))
-	{
-		angularStepOZ -= deltaTime;
-	}
-
-	if (window->KeyHold(GLFW_KEY_0))
-	{
-		angle += deltaTime;
-
-		if (angle >= 360.f)
-		{
-			angle = 0;
+		if (window->KeyHold(GLFW_KEY_W)) {
+			// TODO(student): Translate the camera forward
+			camera->TranslateForward(deltaTime * vitezaCamera);
 		}
 
-		posX = cos(angle);
-		posZ = sin(angle);
-	}
-
-	if (window->KeyHold(GLFW_KEY_9))
-	{
-		angle -= deltaTime;
-
-		if (angle <= -360.f)
-		{
-			angle = 0;
+		if (window->KeyHold(GLFW_KEY_A)) {
+			// TODO(student): Translate the camera to the left
+			camera->TranslateRight(-deltaTime * vitezaCamera);
 		}
 
-		posX = cos(angle);
-		posZ = sin(angle);
-	}
+		if (window->KeyHold(GLFW_KEY_S)) {
+			// TODO(student): Translate the camera backward
+			camera->TranslateForward(-deltaTime * vitezaCamera);
+		}
 
-	if (window->KeyHold(GLFW_KEY_I)) {
-		miniViewportArea.y++;
-	}
-	if (window->KeyHold(GLFW_KEY_K)) {
-		miniViewportArea.y--;
-	}
-	if (window->KeyHold(GLFW_KEY_L)) {
-		miniViewportArea.x += 1;
-	}
-	if (window->KeyHold(GLFW_KEY_J)) {
-		miniViewportArea.x -= 1;
-	}
-	if (window->KeyHold(GLFW_KEY_U)) {
-		miniViewportArea.height += 1;
-		miniViewportArea.width += 3;
-	}
-	if (window->KeyHold(GLFW_KEY_O)) {
-		miniViewportArea.height -= 1;
-		miniViewportArea.width -= 3;
-	}
+		if (window->KeyHold(GLFW_KEY_D)) {
+			// TODO(student): Translate the camera to the right
+			camera->TranslateRight(deltaTime * vitezaCamera);
+		}
 
+		if (window->KeyHold(GLFW_KEY_Q)) {
+			// TODO(student): Translate the camera downward
+			camera->TranslateUpward(-deltaTime * vitezaCamera);
+		}
 
+		if (window->KeyHold(GLFW_KEY_E)) {
+			// TODO(student): Translate the camera upward
+			camera->TranslateUpward(deltaTime * vitezaCamera);
+		}	
+	}
 }
 
 
@@ -380,26 +276,6 @@ void Tema2::OnKeyPress(int key, int mods)
 			break;
 		}
 	}
-	/*if (key == GLFW_KEY_I) {
-		miniViewportArea.y += 10;
-	}
-	if (key == GLFW_KEY_K) {
-		miniViewportArea.y -= 10;
-	}
-	if (key == GLFW_KEY_L) {
-		miniViewportArea.x += 10;
-	}
-	if (key == GLFW_KEY_J) {
-		miniViewportArea.x -= 10;
-	}
-	if (key == GLFW_KEY_U) {
-		miniViewportArea.height+=10;
-		miniViewportArea.width+=10;
-	}
-	if (key == GLFW_KEY_O) {
-		miniViewportArea.height -=10;
-		miniViewportArea.width -=10;
-	}*/
 }
 
 
@@ -411,7 +287,27 @@ void Tema2::OnKeyRelease(int key, int mods)
 
 void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
-	// Add mouse move event
+	if (window->MouseHold(GLFW_MOUSE_BUTTON_RIGHT))
+	{
+		float sensivityOX = 0.001f;
+		float sensivityOY = 0.001f;
+
+		if (window->GetSpecialKeyState() == 0) {
+			// TODO(student): Rotate the camera in first-person mode around
+			// OX and OY using `deltaX` and `deltaY`. Use the sensitivity
+			// variables for setting up the rotation speed.
+			camera->RotateFirstPerson_OX(sensivityOX * -deltaY);
+			camera->RotateFirstPerson_OY(sensivityOY * -deltaX);
+		}
+
+		if (window->GetSpecialKeyState() & GLFW_MOD_CONTROL) {
+			// TODO(student): Rotate the camera in third-person mode around
+			// OX and OY using `deltaX` and `deltaY`. Use the sensitivity
+			// variables for setting up the rotation speed.
+			camera->RotateThirdPerson_OX(sensivityOX * -deltaY);
+			camera->RotateThirdPerson_OY(sensivityOY * -deltaX);
+		}
+	}
 }
 
 

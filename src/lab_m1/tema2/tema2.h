@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components/simple_scene.h"
-
+#include "lab_m1/tema2/camera.h"
 
 namespace m1
 {
@@ -28,8 +28,7 @@ namespace m1
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
-        void RenderScene();
-
+        void Tema2::MyRenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix);
         void OnInputUpdate(float deltaTime, int mods) override;
         void OnKeyPress(int key, int mods) override;
         void OnKeyRelease(int key, int mods) override;
@@ -40,7 +39,9 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 
     protected:
+        Camera *camera;
         glm::mat4 main_transform;
+        glm::mat4 projectionMatrix;
         glm::vec3 endPos, midPos, startPos;
         float translateX, translateY, translateZ;
         float scaleX, scaleY, scaleZ;
