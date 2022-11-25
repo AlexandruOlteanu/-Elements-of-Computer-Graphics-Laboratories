@@ -105,7 +105,15 @@ void Tema2::Init()
 	translateY = 0;
 	translateZ = 0;
 
-	projectionMatrix = glm::perspective(RADIANS(60), window->props.aspectRatio, 0.01f, 200.0f);
+	initial_camera_X = 0;
+	initial_camera_Y = 3;
+	initial_camera_Z = 4.5f;
+
+	truck_center_X = 0.5f;
+	truck_center_Y = 0.5f;
+	truck_center_Z = 0;
+
+	projectionMatrix = glm::perspective(RADIANS(80), window->props.aspectRatio, 0.01f, 200.0f);
 
 	glm::ivec2 resolution = window->GetResolution();
 	miniViewportArea = ViewportArea(50, 50, resolution.x / 5.f, resolution.y / 5.f);
@@ -127,32 +135,50 @@ void Tema2::FrameStart()
 
 void Tema2::Update(float deltaTimeSeconds)
 {
-	camera->Set(glm::vec3(0, 3, 4.5f), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	//RenderMesh(meshes["ground"], shaders["VertexNormal"], glm::vec3(-25, 0, -25), glm::vec3(0.75f));
+	camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	ground_transformation = glm::mat4(1);
+	ground_transformation *= transform3D::Translate(-25, 0, -25);
+	//MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
 	main_transform = glm::mat4(1);
 	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
 	camera->MoveForward(-translateZ);
 	camera->TranslateRight(translateX);
+
 	main_transform *= transform3D::Translate(0.5, 0, 0);
 	camera->TranslateRight(0.5);
 	main_transform *= transform3D::RotateOY(rotation_angle_OY);
 	main_transform *= transform3D::Translate(-0.5, 0, 0);
+
+	camera->MoveForward(-truck_center_Z + initial_camera_Z);
 	camera->RotateFirstPerson_OY(rotation_angle_OY);
-	camera->TranslateRight(cos(rotation_angle_OY) * deltaTimeSeconds * 5);
+	camera->MoveForward(+truck_center_Z - initial_camera_Z);
+
 	MyRenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
 	FrameEnd();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
-
-	// TODO(student): render the scene again, in the new viewport
-	RenderMesh(meshes["ground"], shaders["VertexNormal"], glm::vec3(-25, 0, -25), glm::vec3(0.75f));
+	
+	camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	ground_transformation = glm::mat4(1);
+	ground_transformation *= transform3D::Translate(-25, 0, -25);
+	//MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
 	main_transform = glm::mat4(1);
 	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
-	main_transform *= transform3D::Translate(0.5, 0, translateZ);
+	camera->MoveForward(-translateZ);
+	camera->TranslateRight(translateX);
+
+	main_transform *= transform3D::Translate(0.5, 0, 0);
+	camera->TranslateRight(0.5);
 	main_transform *= transform3D::RotateOY(rotation_angle_OY);
-	main_transform *= transform3D::Translate(-0.5, 0, -translateZ);
-	RenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
+	main_transform *= transform3D::Translate(-0.5, 0, 0);
+
+	camera->MoveForward(-truck_center_Z + initial_camera_Z);
+	camera->RotateFirstPerson_OY(rotation_angle_OY);
+	camera->MoveForward(+truck_center_Z - initial_camera_Z);
+
+	MyRenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
+
 }
 
 

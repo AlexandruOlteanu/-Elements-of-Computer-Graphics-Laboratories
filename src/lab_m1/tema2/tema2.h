@@ -41,9 +41,16 @@ namespace m1
     protected:
         Camera *camera;
         glm::mat4 main_transform;
+        glm::mat4 ground_transformation;
         glm::mat4 projectionMatrix;
         glm::vec3 endPos, midPos, startPos;
         float translateX, translateY, translateZ;
+        float initial_camera_X;
+        float initial_camera_Y;
+        float initial_camera_Z;
+        float truck_center_X;
+        float truck_center_Y;
+        float truck_center_Z;
         float scaleX, scaleY, scaleZ;
         float angularStepOX, angularStepOY, angularStepOZ;
         GLenum polygonMode;
@@ -52,7 +59,7 @@ namespace m1
         GLfloat angleX, angleZ;
         GLfloat posX, posZ, angle;
         GLfloat angleJump;
-        GLfloat truck_speed = 1.2;
+        GLfloat truck_speed = 7;
         GLfloat rotation_angle_OY = 0;
         ViewportArea miniViewportArea;
     };
