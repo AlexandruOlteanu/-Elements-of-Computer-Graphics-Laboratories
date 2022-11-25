@@ -51,7 +51,8 @@ namespace m1
         GLfloat angleX, angleZ;
         GLfloat posX, posZ, angle;
         GLfloat angleJump;
-        GLfloat rotation_angle = 0;
+        GLfloat truck_speed = 1.2;
+        GLfloat rotation_angle_OY = 0;
         ViewportArea miniViewportArea;
     };
 }   // namespace m1

@@ -179,23 +179,31 @@ void Tema2::Update(float deltaTimeSeconds)
 	glPointSize(5);
 	glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
 
-	RenderMesh(meshes["ground"], shaders["VertexNormal"], glm::vec3(-25, 0, -25), glm::vec3(0.75f));
+	//RenderMesh(meshes["ground"], shaders["VertexNormal"], glm::vec3(-25, 0, -25), glm::vec3(0.75f));
 	main_transform = glm::mat4(1);
 	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
-	main_transform *= transform3D::Translate(0.5 + translateX, translateY, translateZ);
-	main_transform *= transform3D::RotateOY(rotation_angle);
-	main_transform *= transform3D::Translate(-0.5 - translateX, -translateY, -translateZ);
+	main_transform *= transform3D::Translate(0.5, 0, 0);
+	main_transform *= transform3D::RotateOY(rotation_angle_OY);
+	main_transform *= transform3D::Translate(-0.5, 0, 0);
 	RenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
 
 
-	//DrawCoordinateSystem();
+
+	DrawCoordinateSystem();
 	RenderScene();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
 
 	// TODO(student): render the scene again, in the new viewport
-	DrawCoordinateSystem();
+	RenderMesh(meshes["ground"], shaders["VertexNormal"], glm::vec3(-25, 0, -25), glm::vec3(0.75f));
+	main_transform = glm::mat4(1);
+	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
+	main_transform *= transform3D::Translate(0.5, 0, translateZ);
+	main_transform *= transform3D::RotateOY(rotation_angle_OY);
+	main_transform *= transform3D::Translate(-0.5, 0, -translateZ);
+	RenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
+	//DrawCoordinateSystem();
 
 	RenderScene();
 
@@ -223,19 +231,37 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 	{
 		if (window->KeyHold(GLFW_KEY_S))
 		{
-			translateZ += 1.5 * deltaTime;
+			translateZ += truck_speed * cos(rotation_angle_OY) * deltaTime;
+			translateX += truck_speed * sin(rotation_angle_OY) * deltaTime;
 		}
 		if (window->KeyHold(GLFW_KEY_W))
 		{
-			translateZ -= 1.5 * deltaTime;
+			translateZ -= truck_speed * cos(rotation_angle_OY) * deltaTime;
+			translateX -= truck_speed * sin(rotation_angle_OY) * deltaTime;
 		}
 		if (window->KeyHold(GLFW_KEY_D))
 		{
-			rotation_angle -= deltaTime;
+			if (window->KeyHold(GLFW_KEY_W)) {
+				rotation_angle_OY -= deltaTime;
+			}
+			else if (window->KeyHold(GLFW_KEY_S)) {
+				rotation_angle_OY += deltaTime;
+			}
+			else {
+				rotation_angle_OY -= deltaTime;
+			}
 		}
 		if (window->KeyHold(GLFW_KEY_A))
 		{
-			rotation_angle += deltaTime;
+			if (window->KeyHold(GLFW_KEY_W)) {
+				rotation_angle_OY += deltaTime;
+			}
+			else if (window->KeyHold(GLFW_KEY_S)) {
+				rotation_angle_OY -= deltaTime;
+			}
+			else {
+				rotation_angle_OY += deltaTime;
+			}
 		}
 		if (window->KeyHold(GLFW_KEY_R))
 		{
