@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <fstream>
 
 #include "lab_m1/tema2/transform3D.h"
 #include "lab_m1/tema2/camera.h"
@@ -10,6 +11,7 @@
 using namespace std;
 using namespace m1;
 
+vector <pair<double, double>> points;
 
 /*
  *  To find out more about `FrameStart`, `Update`, `FrameEnd`
@@ -26,10 +28,78 @@ Tema2::~Tema2()
 {
 }
 
+void Tema2::create_road() {
+
+	vector<VertexFormat> vertices;
+	vector<unsigned int> indices;
+	points.push_back({ points[0].first, points[0].second });
+	points.push_back({ points[1].first, points[1].second });
+	int n = points.size();
+	for (int i = 0; i <= n - 4; i += 2) {
+		vertices.clear();
+		indices.clear();
+		vertices.push_back(VertexFormat(glm::vec3(points[i].first, 0.2, points[i].second), glm::vec3(0, 0, 0)));
+		vertices.push_back(VertexFormat(glm::vec3(points[i + 1].first, 0.2, points[i + 1].second), glm::vec3(0, 0, 0)));
+		vertices.push_back(VertexFormat(glm::vec3(points[i + 2].first, 0.2, points[i + 2].second), glm::vec3(0, 0, 0)));
+		vertices.push_back(VertexFormat(glm::vec3(points[i + 3].first, 0.2, points[i + 3].second), glm::vec3(0, 0, 0)));
+
+		if (i >= 1) {
+			vertices.push_back(VertexFormat(glm::vec3(points[i - 1].first, 0.2, points[i - 1].second), glm::vec3(0, 0, 0)));
+			indices.push_back(0);
+			indices.push_back(1);
+			indices.push_back(4);
+
+			indices.push_back(0);
+			indices.push_back(2);
+			indices.push_back(4);
+
+			indices.push_back(0);
+			indices.push_back(3);
+			indices.push_back(4);
+
+			indices.push_back(1);
+			indices.push_back(2);
+			indices.push_back(4);
+
+			indices.push_back(2);
+			indices.push_back(3);
+			indices.push_back(4);
+		}
+
+		indices.push_back(0);
+		indices.push_back(1);
+		indices.push_back(2);
+
+		indices.push_back(0);
+		indices.push_back(1);
+		indices.push_back(3);
+
+		indices.push_back(0);
+		indices.push_back(2);
+		indices.push_back(3);
+
+		indices.push_back(1);
+		indices.push_back(2);
+		indices.push_back(3);
+
+		meshes["road_point_" + to_string(i / 2)] = new Mesh("road_point_" + to_string(i / 2));
+		meshes["road_point_" + to_string(i / 2)]->InitFromData(vertices, indices);
+	}
+}
+
+void Tema2::render_road() {
+	int n = points.size();
+	for (int i = 0; i <= n - 4; i += 2) {
+		MyRenderMesh(meshes["road_point_" + to_string(i / 2)], shaders["VertexColor"], glm::mat4(1));
+	}
+}
+
 
 void Tema2::Init()
 {
 	camera = new Camera();
+	extract_road_points(points);
+	create_road();
 
 	vector<VertexFormat> vertices
 	{
@@ -68,12 +138,12 @@ void Tema2::Init()
 	vector<VertexFormat> vertices1
 	{
 		// TODO(student): Complete the vertices data for the cube mesh
-		VertexFormat(glm::vec3(0, 0,  1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(1, 0,  1), glm::vec3(1, 0, 0)),
+		VertexFormat(glm::vec3(0, 0.2,  1), glm::vec3(1, 0, 0)),
+		VertexFormat(glm::vec3(1, 0.2,  1), glm::vec3(1, 0, 0)),
 		VertexFormat(glm::vec3(0, 1,  1), glm::vec3(1, 0, 0)),
 		VertexFormat(glm::vec3(1, 1,  1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(0, 0,  -1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(1, 0,  -1), glm::vec3(1, 0, 0)),
+		VertexFormat(glm::vec3(0, 0.2,  -1), glm::vec3(1, 0, 0)),
+		VertexFormat(glm::vec3(1, 0.2,  -1), glm::vec3(1, 0, 0)),
 		VertexFormat(glm::vec3(0, 1,  -1), glm::vec3(1, 0, 0)),
 		VertexFormat(glm::vec3(1, 1,  -1), glm::vec3(1, 0, 0))
 
@@ -135,10 +205,11 @@ void Tema2::FrameStart()
 
 void Tema2::Update(float deltaTimeSeconds)
 {
+	render_road();
+
 	camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	ground_transformation = glm::mat4(1);
-	ground_transformation *= transform3D::Translate(-25, 0, -25);
-	//MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
+	MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
 	main_transform = glm::mat4(1);
 	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
 	camera->MoveForward(-translateZ);
@@ -162,7 +233,7 @@ void Tema2::Update(float deltaTimeSeconds)
 	camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	ground_transformation = glm::mat4(1);
 	ground_transformation *= transform3D::Translate(-25, 0, -25);
-	//MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
+	MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
 	main_transform = glm::mat4(1);
 	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
 	camera->MoveForward(-translateZ);
