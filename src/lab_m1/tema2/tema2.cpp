@@ -36,6 +36,42 @@ Tema2::~Tema2()
 {
 }
 
+void Tema2::create_parallelepiped(string name, double point1_x, double point1_z, double point2_x, double point2_z, double height1, double height2, glm::vec3 color) {
+
+	vector<VertexFormat> vertices
+	{
+		VertexFormat(glm::vec3(point1_x, height1,  point1_z), color),
+		VertexFormat(glm::vec3(point2_x, height1,  point1_z), color),
+		VertexFormat(glm::vec3(point1_x, height2,  point1_z), color),
+		VertexFormat(glm::vec3(point2_x, height2,  point1_z), color),
+		VertexFormat(glm::vec3(point1_x, height1,  point2_z), color),
+		VertexFormat(glm::vec3(point2_x, height1,  point2_z), color),
+		VertexFormat(glm::vec3(point1_x, height2,  point2_z), color),
+		VertexFormat(glm::vec3(point2_x, height2,  point2_z), color)
+
+	};
+
+	vector<unsigned int> indices =
+	{
+		0, 1, 2,
+		1, 3, 2,
+		2, 3, 7,
+		2, 7, 6,
+		1, 7, 3,
+		1, 5, 7,
+		6, 7, 4,
+		7, 5, 4,
+		0, 4, 1,
+		1, 4, 5,
+		2, 6, 4,
+		0, 2, 4
+	};
+
+	meshes[name] = new Mesh(name);
+	meshes[name]->InitFromData(vertices, indices);
+
+}
+
 void add_triangle(int x, int y, int z, vector<VertexFormat> vertices) {
 	triangle t;
 	t.A = { vertices[x].position.x, vertices[x].position.z };
@@ -162,82 +198,62 @@ bool check_on_road(double x, double y) {
 	return 0;
 }
 
+void Tema2::create_trees() {
+
+	create_parallelepiped("base", -0.5, 0.5, 0.5, -0.5, 0.2, 7, glm::vec3(0.46, 0.36, 0.28));
+	create_parallelepiped("branch1", -0.25, 0.25, 0.25, -0.25, 0.25, 3, glm::vec3(0.46, 0.36, 0.28));
+	create_parallelepiped("branch2", -0.25, 0.25, 0.25, -0.25, 0.25, 3, glm::vec3(0.46, 0.36, 0.28));
+	create_parallelepiped("main_leaf", -2, 2, 2, -2, 0.2, 3, glm::vec3(0.004, 0.196, 0.125));
+	create_parallelepiped("leaf1", -1, 1, 1, -1, 0.2, 2, glm::vec3(0.004, 0.196, 0.125));
+	create_parallelepiped("leaf2", -1, 1, 1, -1, 0.2, 2, glm::vec3(0.004, 0.196, 0.125));
+
+}
+
+
+
+void Tema2::render_trees() {
+	glm::mat4 base_transformation = glm::mat4(1);
+	MyRenderMesh(meshes["base"], shaders["VertexColor"], base_transformation);
+
+	glm::mat4 branch1_transformation = glm::mat4(1);
+	branch1_transformation *= transform3D::Translate(0, 2, 0);
+	branch1_transformation *= transform3D::RotateOZ(1);
+	MyRenderMesh(meshes["branch1"], shaders["VertexColor"], branch1_transformation);
+
+	glm::mat4 branch2_transformation = glm::mat4(1);
+	branch2_transformation *= transform3D::Translate(0, 3, 0);
+	branch2_transformation *= transform3D::RotateOZ(-1);
+	MyRenderMesh(meshes["branch2"], shaders["VertexColor"], branch2_transformation);
+
+	glm::mat4 main_leaf_transformation = glm::mat4(1);
+	main_leaf_transformation *= transform3D::Translate(0, 6.5, 0);
+	MyRenderMesh(meshes["main_leaf"], shaders["VertexColor"], main_leaf_transformation);
+
+	glm::mat4 leaf1_transformation = glm::mat4(1);
+	leaf1_transformation *= transform3D::Translate(-2, 3.3, 0);
+	leaf1_transformation *= transform3D::RotateOZ(1);
+	MyRenderMesh(meshes["leaf1"], shaders["VertexColor"], leaf1_transformation);
+
+	glm::mat4 leaf2_transformation = glm::mat4(1);
+	leaf2_transformation *= transform3D::Translate(2, 4.3, 0);
+	leaf2_transformation *= transform3D::RotateOZ(-1);
+	MyRenderMesh(meshes["leaf2"], shaders["VertexColor"], leaf2_transformation);
+}
+
+
+
 
 void Tema2::Init()
 {
 	camera = new Camera();
 	minimap_camera = new Camera();
+	projectionMatrix = glm::perspective(RADIANS(80), window->props.aspectRatio, 0.01f, 200.0f);
 	extract_road_points(points);
 	create_road();
+	create_trees();
 
-	vector<VertexFormat> vertices
-	{
-		// TODO(student): Complete the vertices data for the cube mesh
-		VertexFormat(glm::vec3(1000, 0.1,  -1000), glm::vec3(0, 1, 1)),
-		VertexFormat(glm::vec3(1000, 0.1,  1000), glm::vec3(0, 1, 1)),
-		VertexFormat(glm::vec3(1000, 0.1,  -1000), glm::vec3(0, 1, 1)),
-		VertexFormat(glm::vec3(1000, 0.1,  -1000), glm::vec3(0, 1, 1)),
-		VertexFormat(glm::vec3(-1000, 0.1,  0), glm::vec3(0, 1, 1)),
-		VertexFormat(glm::vec3(1000, 0.1,  0), glm::vec3(0, 1, 1)),
-		VertexFormat(glm::vec3(-1000, 0.1,  -1000), glm::vec3(0, 1, 1)),
-		VertexFormat(glm::vec3(1000, 0.1,  0), glm::vec3(0, 1, 1))
-
-	};
-
-	vector<unsigned int> indices =
-	{
-		0, 1, 2,    // indices for first triangle
-		1, 3, 2,    // indices for second triangle
-		2, 3, 7,
-		2, 7, 6,
-		1, 7, 3,
-		1, 5, 7,
-		6, 7, 4,
-		7, 5, 4,
-		0, 4, 1,
-		1, 4, 5,
-		2, 6, 4,
-		0, 2, 4
-
-	};
-
-	meshes["ground"] = new Mesh("ground");
-	meshes["ground"]->InitFromData(vertices, indices);
-
-	vector<VertexFormat> vertices1
-	{
-		// TODO(student): Complete the vertices data for the cube mesh
-		VertexFormat(glm::vec3(0, 0.2,  1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(1, 0.2,  1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(0, 1,  1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(1, 1,  1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(0, 0.2,  -1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(1, 0.2,  -1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(0, 1,  -1), glm::vec3(1, 0, 0)),
-		VertexFormat(glm::vec3(1, 1,  -1), glm::vec3(1, 0, 0))
-
-	};
-
-	vector<unsigned int> indices1 =
-	{
-		0, 1, 2,    // indices for first triangle
-		1, 3, 2,    // indices for second triangle
-		2, 3, 7,
-		2, 7, 6,
-		1, 7, 3,
-		1, 5, 7,
-		6, 7, 4,
-		7, 5, 4,
-		0, 4, 1,
-		1, 4, 5,
-		2, 6, 4,
-		0, 2, 4
-
-	};
-
-	meshes["truck"] = new Mesh("truck");
-	meshes["truck"]->InitFromData(vertices1, indices1);
-
+	create_parallelepiped("ground", -1000, 1000, 1000, -1000, 0.1, 0.1, glm::vec3(0, 1, 1));
+	create_parallelepiped("truck", 0, 1, 1, -1, 0.2, 1, glm::vec3(1, 0, 0));
 
 	// Initialize tx, ty and tz (the translation steps)
 	translateX = 0;
@@ -256,7 +272,6 @@ void Tema2::Init()
 	glm::ivec2 resolution = window->GetResolution();
 	miniViewportArea = ViewportArea(50, 50, resolution.x / 5.f, resolution.y / 5.f);
 
-
 }
 
 
@@ -271,54 +286,43 @@ void Tema2::FrameStart()
 	glViewport(0, 0, resolution.x, resolution.y);
 }
 
-void Tema2::Update(float deltaTimeSeconds)
-{
-	projectionMatrix = glm::perspective(RADIANS(80), window->props.aspectRatio, 0.01f, 200.0f);
-	DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
-	render_road();
-	
+void Tema2::update_camera() {
 	camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	ground_transformation = glm::mat4(1);
-	MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
-	main_transform = glm::mat4(1);
-	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
 	camera->MoveForward(-translateZ);
 	camera->TranslateRight(translateX);
-
-	main_transform *= transform3D::Translate(0.5, 0, 0);
 	camera->TranslateRight(0.5);
-	main_transform *= transform3D::RotateOY(rotation_angle_OY);
-	main_transform *= transform3D::Translate(-0.5, 0, 0);
-
 	camera->MoveForward(-truck_center_Z + initial_camera_Z);
 	camera->RotateFirstPerson_OY(rotation_angle_OY);
 	camera->MoveForward(+truck_center_Z - initial_camera_Z);
+}
 
-	MyRenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
-	minimap_camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	DrawCoordinateSystem(minimap_camera->GetViewMatrix(), projectionMatrix);
-	render_road();
-	ground_transformation = glm::mat4(1);
-	ground_transformation *= transform3D::Translate(-25, 0, -25);
-	MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
+void Tema2::update_truck() {
 	main_transform = glm::mat4(1);
 	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
-	minimap_camera->MoveForward(-translateZ);
-	minimap_camera->TranslateRight(translateX);
-
 	main_transform *= transform3D::Translate(0.5, 0, 0);
-	minimap_camera->TranslateRight(0.5);
 	main_transform *= transform3D::RotateOY(rotation_angle_OY);
 	main_transform *= transform3D::Translate(-0.5, 0, 0);
 
-	minimap_camera->MoveForward(-truck_center_Z + initial_camera_Z);
-	minimap_camera->RotateFirstPerson_OY(rotation_angle_OY);
-	minimap_camera->MoveForward(+truck_center_Z - initial_camera_Z);
-
 	MyRenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
+}
+
+void Tema2::render_ground() {
+	ground_transformation = glm::mat4(1);
+	MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
+}
+
+void Tema2::Update(float deltaTimeSeconds)
+{
+	DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+	render_road();
+	render_trees();
+	render_ground();
+	update_truck();
+	update_camera();
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
+	DrawCoordinateSystem(minimap_camera->GetViewMatrix(), projectionMatrix);
 
 }
 

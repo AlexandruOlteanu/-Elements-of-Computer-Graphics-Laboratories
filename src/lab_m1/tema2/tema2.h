@@ -43,6 +43,12 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 		void Tema2::create_road();
 		void Tema2::render_road();
+        void Tema2::create_trees();
+        void Tema2::render_trees();
+        void Tema2::update_camera();
+        void Tema2::update_truck();
+        void Tema2::render_ground();
+        void Tema2::create_parallelepiped(std :: string name, double point1_x, double point1_y, double point2_x, double point2_y, double height1, double height2, glm::vec3 color);
 		void extract_road_points(std :: vector<std :: pair<double, double>> &points) {
             points.push_back({ -2.17543404815316599, -0.00000000000000000 });
             points.push_back({ 3.19863062050413083, -0.00000000000000000 });
