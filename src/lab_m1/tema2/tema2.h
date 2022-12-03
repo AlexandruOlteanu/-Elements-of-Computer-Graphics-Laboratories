@@ -31,6 +31,7 @@ namespace m1
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
+        void Tema2::MiniFrameEnd();
         void Tema2::MyRenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix);
         void OnInputUpdate(float deltaTime, int mods) override;
         void OnKeyPress(int key, int mods) override;
@@ -483,6 +484,7 @@ namespace m1
 
     protected:
         Camera *camera;
+        Camera* minimap_camera;
         glm::mat4 main_transform;
         glm::mat4 ground_transformation;
         glm::mat4 projectionMatrix;
@@ -504,6 +506,7 @@ namespace m1
         GLfloat truck_speed = 7;
         GLfloat rotation_angle_OY = 0;
         ViewportArea miniViewportArea;
+        
     };
 }   // namespace m1
 

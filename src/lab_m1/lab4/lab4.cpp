@@ -114,12 +114,11 @@ void Lab4::Update(float deltaTimeSeconds)
 	DrawCoordinateSystem();
 	RenderScene();
 
-	glClear(GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
 
 	// TODO(student): render the scene again, in the new viewport
 	DrawCoordinateSystem();
-
 	RenderScene();
 
 

@@ -13,6 +13,14 @@ using namespace m1;
 
 vector <pair<double, double>> points;
 
+struct triangle {
+	pair<double, double> A;
+	pair<double, double> B;
+	pair<double, double> C;
+};
+
+vector<triangle> triangles;
+
 /*
  *  To find out more about `FrameStart`, `Update`, `FrameEnd`
  *  and the order in which they are called, see `world.cpp`.
@@ -26,6 +34,14 @@ Tema2::Tema2()
 
 Tema2::~Tema2()
 {
+}
+
+void add_triangle(int x, int y, int z, vector<VertexFormat> vertices) {
+	triangle t;
+	t.A = { vertices[x].position.x, vertices[x].position.z };
+	t.B = { vertices[y].position.x, vertices[y].position.z };
+	t.C = { vertices[z].position.x, vertices[z].position.z };
+	triangles.push_back(t);
 }
 
 void Tema2::create_road() {
@@ -48,39 +64,52 @@ void Tema2::create_road() {
 			indices.push_back(0);
 			indices.push_back(1);
 			indices.push_back(4);
+			add_triangle(0, 1, 4, vertices);
 
 			indices.push_back(0);
 			indices.push_back(2);
 			indices.push_back(4);
+			add_triangle(0, 2, 4, vertices);
 
 			indices.push_back(0);
 			indices.push_back(3);
 			indices.push_back(4);
+			add_triangle(0, 3, 4, vertices);
 
 			indices.push_back(1);
 			indices.push_back(2);
 			indices.push_back(4);
+			add_triangle(1, 2, 4, vertices);
 
 			indices.push_back(2);
 			indices.push_back(3);
 			indices.push_back(4);
+			add_triangle(2, 3, 4, vertices);
+
 		}
 
 		indices.push_back(0);
 		indices.push_back(1);
 		indices.push_back(2);
+		add_triangle(0, 1, 2, vertices);
 
 		indices.push_back(0);
 		indices.push_back(1);
 		indices.push_back(3);
+		add_triangle(0, 1, 3, vertices);
+
 
 		indices.push_back(0);
 		indices.push_back(2);
 		indices.push_back(3);
+		add_triangle(0, 2, 3, vertices);
+
 
 		indices.push_back(1);
 		indices.push_back(2);
 		indices.push_back(3);
+		add_triangle(1, 2, 3, vertices);
+
 
 		meshes["road_point_" + to_string(i / 2)] = new Mesh("road_point_" + to_string(i / 2));
 		meshes["road_point_" + to_string(i / 2)]->InitFromData(vertices, indices);
@@ -95,9 +124,49 @@ void Tema2::render_road() {
 }
 
 
+double triangle_area(pair<double, double> A, pair<double, double> B, pair<double, double> C) {
+	double area = 0;
+	pair<double, double> AB = { B.first - A.first, B.second - A.second };
+	pair<double, double> AC = { C.first - A.first, C.second - A.second };
+	double product = AB.first * AC.second - AB.second * AC.first;
+	if (product < 0) {
+		product = -product;
+	}
+	area = product / 2;
+	return area;
+}
+
+bool in_triangle(pair<double, double> car_point, pair<double, double> A, pair<double, double> B, pair<double, double> C) {
+
+	double ABC_area = triangle_area(A, B, C);
+	double sum_area = triangle_area(car_point, A, B);
+	sum_area += triangle_area(car_point, B, C);
+	sum_area += triangle_area(car_point, A, C);
+
+	if (fabs(ABC_area - sum_area) < 1e-7) {
+		return 1;
+	}
+
+	return 0;
+}
+
+bool check_on_road(double x, double y) {
+
+	int sz = triangles.size();
+	for (int i = 0; i < sz; ++i) {
+		if (in_triangle({ x, y }, triangles[i].A, triangles[i].B, triangles[i].C)) {
+			return 1;
+		}
+	}
+	
+	return 0;
+}
+
+
 void Tema2::Init()
 {
 	camera = new Camera();
+	minimap_camera = new Camera();
 	extract_road_points(points);
 	create_road();
 
@@ -183,7 +252,6 @@ void Tema2::Init()
 	truck_center_Y = 0.5f;
 	truck_center_Z = 0;
 
-	projectionMatrix = glm::perspective(RADIANS(80), window->props.aspectRatio, 0.01f, 200.0f);
 
 	glm::ivec2 resolution = window->GetResolution();
 	miniViewportArea = ViewportArea(50, 50, resolution.x / 5.f, resolution.y / 5.f);
@@ -205,8 +273,10 @@ void Tema2::FrameStart()
 
 void Tema2::Update(float deltaTimeSeconds)
 {
+	projectionMatrix = glm::perspective(RADIANS(80), window->props.aspectRatio, 0.01f, 200.0f);
+	DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
 	render_road();
-
+	
 	camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	ground_transformation = glm::mat4(1);
 	MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
@@ -225,28 +295,28 @@ void Tema2::Update(float deltaTimeSeconds)
 	camera->MoveForward(+truck_center_Z - initial_camera_Z);
 
 	MyRenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
-	FrameEnd();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
-	
-	camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	minimap_camera->Set(glm::vec3(initial_camera_X, initial_camera_Y, initial_camera_Z), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	DrawCoordinateSystem(minimap_camera->GetViewMatrix(), projectionMatrix);
+	render_road();
 	ground_transformation = glm::mat4(1);
 	ground_transformation *= transform3D::Translate(-25, 0, -25);
 	MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
 	main_transform = glm::mat4(1);
 	main_transform *= transform3D::Translate(translateX, translateY, translateZ);
-	camera->MoveForward(-translateZ);
-	camera->TranslateRight(translateX);
+	minimap_camera->MoveForward(-translateZ);
+	minimap_camera->TranslateRight(translateX);
 
 	main_transform *= transform3D::Translate(0.5, 0, 0);
-	camera->TranslateRight(0.5);
+	minimap_camera->TranslateRight(0.5);
 	main_transform *= transform3D::RotateOY(rotation_angle_OY);
 	main_transform *= transform3D::Translate(-0.5, 0, 0);
 
-	camera->MoveForward(-truck_center_Z + initial_camera_Z);
-	camera->RotateFirstPerson_OY(rotation_angle_OY);
-	camera->MoveForward(+truck_center_Z - initial_camera_Z);
+	minimap_camera->MoveForward(-truck_center_Z + initial_camera_Z);
+	minimap_camera->RotateFirstPerson_OY(rotation_angle_OY);
+	minimap_camera->MoveForward(+truck_center_Z - initial_camera_Z);
 
 	MyRenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
 
@@ -255,7 +325,11 @@ void Tema2::Update(float deltaTimeSeconds)
 
 void Tema2::FrameEnd()
 {
-	DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+	
+}
+
+void Tema2::MiniFrameEnd() {
+
 }
 
 void Tema2::MyRenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
@@ -282,15 +356,25 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 	// TODO(student): Add transformation logic
 	if (!window->MouseHold(GLFW_MOUSE_BUTTON_RIGHT))
 	{
+		double new_translate_X = translateX;
+		double new_translate_Z = translateZ;
 		if (window->KeyHold(GLFW_KEY_S))
 		{
-			translateZ += truck_speed * cos(rotation_angle_OY) * deltaTime;
-			translateX += truck_speed * sin(rotation_angle_OY) * deltaTime;
+			new_translate_Z += truck_speed * cos(rotation_angle_OY) * deltaTime;
+			new_translate_X += truck_speed * sin(rotation_angle_OY) * deltaTime;
+			if (check_on_road(new_translate_X + 0.5, new_translate_Z)) {
+				translateX = new_translate_X;
+				translateZ = new_translate_Z;
+			}
 		}
 		if (window->KeyHold(GLFW_KEY_W))
 		{
-			translateZ -= truck_speed * cos(rotation_angle_OY) * deltaTime;
-			translateX -= truck_speed * sin(rotation_angle_OY) * deltaTime;
+			new_translate_Z -= truck_speed * cos(rotation_angle_OY) * deltaTime;
+			new_translate_X -= truck_speed * sin(rotation_angle_OY) * deltaTime;
+			if (check_on_road(new_translate_X + 0.5, new_translate_Z)) {
+				translateX = new_translate_X;
+				translateZ = new_translate_Z;
+			}
 		}
 		if (window->KeyHold(GLFW_KEY_D))
 		{
