@@ -247,7 +247,6 @@ void Tema2::Init()
 {
 	camera = new Camera();
 	minimap_camera = new Camera();
-	projectionMatrix = glm::perspective(RADIANS(80), window->props.aspectRatio, 0.01f, 200.0f);
 	extract_road_points(points);
 	create_road();
 	create_trees();
@@ -313,16 +312,21 @@ void Tema2::render_ground() {
 
 void Tema2::Update(float deltaTimeSeconds)
 {
-	DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+	projectionMatrix = glm::perspective(RADIANS(80), window->props.aspectRatio, 0.01f, 200.0f);
+	update_camera();
 	render_road();
 	render_trees();
 	render_ground();
 	update_truck();
-	update_camera();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
-	DrawCoordinateSystem(minimap_camera->GetViewMatrix(), projectionMatrix);
+	camera->Set(glm::vec3(translateX, 15, translateZ), glm::vec3(translateX, 0, translateZ), glm::vec3(-sin(rotation_angle_OY), 0, -cos(-rotation_angle_OY)));
+
+	render_road();
+	render_trees();
+	render_ground();
+	update_truck();
 
 }
 

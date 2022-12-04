@@ -504,6 +504,7 @@ namespace m1
         float truck_center_Z;
         float scaleX, scaleY, scaleZ;
         float angularStepOX, angularStepOY, angularStepOZ;
+        int fovo = 50;
         GLenum polygonMode;
         GLfloat translateZSine, translateXSine, translateYSine;
         GLfloat angleX, angleZ;
