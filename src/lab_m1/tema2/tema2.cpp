@@ -12,6 +12,7 @@ using namespace std;
 using namespace m1;
 
 vector <pair<double, double>> points;
+vector<pair<double, double>> trees_points;
 
 struct triangle {
 	pair<double, double> A;
@@ -209,35 +210,78 @@ void Tema2::create_trees() {
 
 }
 
+double distance(pair<double, double> A, pair<double, double> B) {
+	return sqrt((A.first - B.first) * (A.first - B.first) + (A.second - B.second) * (A.second - B.second));
+}
 
+void find_trees_points() {
+
+	for (int x = -200; x <= 200; ++x) {
+		for (int z = -200; z <= 200; ++z) {
+			bool ok = 1;
+			double min_dist = 1e9;
+			for (auto point : points) {
+				double dist = distance(point, { x, z });
+				if ( dist <= 5) {
+					ok = 0;
+					break;
+				}
+				min_dist = min(min_dist, dist);
+			}
+
+			if (min_dist > 10) {
+				ok = 0;
+			}
+
+			for (auto tree_point : trees_points) {
+				if (distance(tree_point, { x, z }) <= 15) {
+					ok = 0;
+					break;
+				}
+			}
+			if (!ok) {
+				continue;
+			}
+			trees_points.push_back({ x, z });
+		}
+	}
+}
 
 void Tema2::render_trees() {
-	glm::mat4 base_transformation = glm::mat4(1);
-	MyRenderMesh(meshes["base"], shaders["VertexColor"], base_transformation);
 
-	glm::mat4 branch1_transformation = glm::mat4(1);
-	branch1_transformation *= transform3D::Translate(0, 2, 0);
-	branch1_transformation *= transform3D::RotateOZ(1);
-	MyRenderMesh(meshes["branch1"], shaders["VertexColor"], branch1_transformation);
 
-	glm::mat4 branch2_transformation = glm::mat4(1);
-	branch2_transformation *= transform3D::Translate(0, 3, 0);
-	branch2_transformation *= transform3D::RotateOZ(-1);
-	MyRenderMesh(meshes["branch2"], shaders["VertexColor"], branch2_transformation);
+	for (auto tree_point : trees_points) {
 
-	glm::mat4 main_leaf_transformation = glm::mat4(1);
-	main_leaf_transformation *= transform3D::Translate(0, 6.5, 0);
-	MyRenderMesh(meshes["main_leaf"], shaders["VertexColor"], main_leaf_transformation);
+		glm::mat4 main_transformation = glm::mat4(1);
+		main_transformation *= transform3D::Translate(tree_point.first, 0, tree_point.second);
 
-	glm::mat4 leaf1_transformation = glm::mat4(1);
-	leaf1_transformation *= transform3D::Translate(-2, 3.3, 0);
-	leaf1_transformation *= transform3D::RotateOZ(1);
-	MyRenderMesh(meshes["leaf1"], shaders["VertexColor"], leaf1_transformation);
+		glm::mat4 base_transformation = main_transformation;
+		MyRenderMesh(meshes["base"], shaders["VertexColor"], base_transformation);
 
-	glm::mat4 leaf2_transformation = glm::mat4(1);
-	leaf2_transformation *= transform3D::Translate(2, 4.3, 0);
-	leaf2_transformation *= transform3D::RotateOZ(-1);
-	MyRenderMesh(meshes["leaf2"], shaders["VertexColor"], leaf2_transformation);
+		glm::mat4 branch1_transformation = main_transformation;
+		branch1_transformation *= transform3D::Translate(0, 2, 0);
+		branch1_transformation *= transform3D::RotateOZ(1);
+		MyRenderMesh(meshes["branch1"], shaders["VertexColor"], branch1_transformation);
+
+		glm::mat4 branch2_transformation = main_transformation;
+		branch2_transformation *= transform3D::Translate(0, 3, 0);
+		branch2_transformation *= transform3D::RotateOZ(-1);
+		MyRenderMesh(meshes["branch2"], shaders["VertexColor"], branch2_transformation);
+
+		glm::mat4 main_leaf_transformation = main_transformation;
+		main_leaf_transformation *= transform3D::Translate(0, 6.5, 0);
+		MyRenderMesh(meshes["main_leaf"], shaders["VertexColor"], main_leaf_transformation);
+
+		glm::mat4 leaf1_transformation = main_transformation;
+		leaf1_transformation *= transform3D::Translate(-2, 3.3, 0);
+		leaf1_transformation *= transform3D::RotateOZ(1);
+		MyRenderMesh(meshes["leaf1"], shaders["VertexColor"], leaf1_transformation);
+
+		glm::mat4 leaf2_transformation = main_transformation;
+		leaf2_transformation *= transform3D::Translate(2, 4.3, 0);
+		leaf2_transformation *= transform3D::RotateOZ(-1);
+		MyRenderMesh(meshes["leaf2"], shaders["VertexColor"], leaf2_transformation);
+	}
 }
 
 
@@ -250,6 +294,7 @@ void Tema2::Init()
 	extract_road_points(points);
 	create_road();
 	create_trees();
+	find_trees_points();
 
 	create_parallelepiped("ground", -1000, 1000, 1000, -1000, 0.1, 0.1, glm::vec3(0, 1, 1));
 	create_parallelepiped("truck", 0, 1, 1, -1, 0.2, 1, glm::vec3(1, 0, 0));
@@ -321,7 +366,7 @@ void Tema2::Update(float deltaTimeSeconds)
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
-	camera->Set(glm::vec3(translateX, 15, translateZ), glm::vec3(translateX, 0, translateZ), glm::vec3(-sin(rotation_angle_OY), 0, -cos(-rotation_angle_OY)));
+	camera->Set(glm::vec3(translateX, 15, translateZ), glm::vec3(translateX, 0, translateZ), glm::vec3(-1, 0, -1));
 
 	render_road();
 	render_trees();
