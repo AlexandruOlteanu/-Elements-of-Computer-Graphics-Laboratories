@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <fstream>
 
 #include "lab_m1/tema2/transform3D.h"
 #include "lab_m1/tema2/camera.h"
@@ -21,12 +20,6 @@ struct triangle {
 };
 
 vector<triangle> triangles;
-
-/*
- *  To find out more about `FrameStart`, `Update`, `FrameEnd`
- *  and the order in which they are called, see `world.cpp`.
- */
-
 
 Tema2::Tema2()
 {
@@ -217,7 +210,6 @@ void find_trees_points() {
 
 void Tema2::render_trees() {
 
-
 	for (auto tree_point : trees_points) {
 
 		glm::mat4 main_transformation = glm::mat4(1);
@@ -267,7 +259,6 @@ void Tema2::Init()
 	create_parallelepiped("ground", -1000, 1000, 1000, -1000, 0.1, 0.1, glm::vec3(0, 1, 1));
 	create_parallelepiped("truck", 0, 1, 1, -1, 0.2, 1, glm::vec3(1, 0, 0));
 
-	// Initialize tx, ty and tz (the translation steps)
 	translateX = 0;
 	translateY = 0;
 	translateZ = 0;
@@ -280,12 +271,21 @@ void Tema2::Init()
 	truck_center_Y = 0.5f;
 	truck_center_Z = 0;
 
-
 	glm::ivec2 resolution = window->GetResolution();
 	miniViewportArea = ViewportArea(50, 50, resolution.x / 5.f, resolution.y / 5.f);
-
 }
 
+void Tema2::MyRenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
+{
+	if (!mesh || !shader || !shader->program)
+		return;
+
+	shader->Use();
+	glUniformMatrix4fv(shader->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(camera->GetViewMatrix()));
+	glUniformMatrix4fv(shader->loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+	glUniformMatrix4fv(shader->loc_model_matrix, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+	mesh->Render();
+}
 
 void Tema2::FrameStart()
 {
@@ -343,34 +343,8 @@ void Tema2::Update(float deltaTimeSeconds)
 
 }
 
-
-void Tema2::FrameEnd()
-{
-	
-}
-
-void Tema2::MyRenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
-{
-	if (!mesh || !shader || !shader->program)
-	    return;
-
-	shader->Use();
-	glUniformMatrix4fv(shader->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(camera->GetViewMatrix()));
-	glUniformMatrix4fv(shader->loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
-	glUniformMatrix4fv(shader->loc_model_matrix, 1, GL_FALSE, glm::value_ptr(modelMatrix));
-	mesh->Render();
-}
-
-
-/*
- *  These are callback functions. To find more about callbacks and
- *  how they behave, see `input_controller.h`.
- */
-
-
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
-	// TODO(student): Add transformation logic
 	if (!window->MouseHold(GLFW_MOUSE_BUTTON_RIGHT))
 	{
 		double new_translate_X = translateX;
@@ -424,64 +398,30 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 		float vitezaCamera = 3.0f;
 
 		if (window->KeyHold(GLFW_KEY_W)) {
-			// TODO(student): Translate the camera forward
 			camera->TranslateForward(deltaTime * vitezaCamera);
 		}
 
 		if (window->KeyHold(GLFW_KEY_A)) {
-			// TODO(student): Translate the camera to the left
 			camera->TranslateRight(-deltaTime * vitezaCamera);
 		}
 
 		if (window->KeyHold(GLFW_KEY_S)) {
-			// TODO(student): Translate the camera backward
 			camera->TranslateForward(-deltaTime * vitezaCamera);
 		}
 
 		if (window->KeyHold(GLFW_KEY_D)) {
-			// TODO(student): Translate the camera to the right
 			camera->TranslateRight(deltaTime * vitezaCamera);
 		}
 
 		if (window->KeyHold(GLFW_KEY_Q)) {
-			// TODO(student): Translate the camera downward
 			camera->TranslateUpward(-deltaTime * vitezaCamera);
 		}
 
 		if (window->KeyHold(GLFW_KEY_E)) {
-			// TODO(student): Translate the camera upward
 			camera->TranslateUpward(deltaTime * vitezaCamera);
 		}	
 	}
 }
-
-
-void Tema2::OnKeyPress(int key, int mods)
-{
-	// Add key press event
-	if (key == GLFW_KEY_SPACE)
-	{
-		switch (polygonMode)
-		{
-		case GL_POINT:
-			polygonMode = GL_FILL;
-			break;
-		case GL_LINE:
-			polygonMode = GL_POINT;
-			break;
-		default:
-			polygonMode = GL_LINE;
-			break;
-		}
-	}
-}
-
-
-void Tema2::OnKeyRelease(int key, int mods)
-{
-	// Add key release event
-}
-
 
 void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
@@ -506,26 +446,4 @@ void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 			camera->RotateThirdPerson_OY(sensivityOY * -deltaX);
 		}
 	}
-}
-
-
-void Tema2::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
-{
-	// Add mouse button press event
-}
-
-
-void Tema2::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods)
-{
-	// Add mouse button release event
-}
-
-
-void Tema2::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY)
-{
-}
-
-
-void Tema2::OnWindowResize(int width, int height)
-{
 }
