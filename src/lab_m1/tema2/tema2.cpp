@@ -81,6 +81,13 @@ void add_triangle(int x, int y, int z, vector<VertexFormat> vertices) {
 	triangles.push_back(t);
 }
 
+void make_triangle_indices(double x, double y, double z, vector<unsigned int> &indices, vector<VertexFormat> vertices) {
+	indices.push_back(x);
+	indices.push_back(y);
+	indices.push_back(z);
+	add_triangle(x, y, z, vertices);
+}
+
 void Tema2::create_road() {
 
 	vector<VertexFormat> vertices;
@@ -98,55 +105,16 @@ void Tema2::create_road() {
 
 		if (i >= 1) {
 			vertices.push_back(VertexFormat(glm::vec3(points[i - 1].first, 0.2, points[i - 1].second), glm::vec3(0, 0, 0)));
-			indices.push_back(0);
-			indices.push_back(1);
-			indices.push_back(4);
-			add_triangle(0, 1, 4, vertices);
-
-			indices.push_back(0);
-			indices.push_back(2);
-			indices.push_back(4);
-			add_triangle(0, 2, 4, vertices);
-
-			indices.push_back(0);
-			indices.push_back(3);
-			indices.push_back(4);
-			add_triangle(0, 3, 4, vertices);
-
-			indices.push_back(1);
-			indices.push_back(2);
-			indices.push_back(4);
-			add_triangle(1, 2, 4, vertices);
-
-			indices.push_back(2);
-			indices.push_back(3);
-			indices.push_back(4);
-			add_triangle(2, 3, 4, vertices);
-
+			make_triangle_indices(0, 1, 4, indices, vertices);
+			make_triangle_indices(0, 2, 4, indices, vertices);
+			make_triangle_indices(0, 3, 4, indices, vertices);
+			make_triangle_indices(1, 2, 4, indices, vertices);
+			make_triangle_indices(2, 3, 4, indices, vertices);
 		}
-
-		indices.push_back(0);
-		indices.push_back(1);
-		indices.push_back(2);
-		add_triangle(0, 1, 2, vertices);
-
-		indices.push_back(0);
-		indices.push_back(1);
-		indices.push_back(3);
-		add_triangle(0, 1, 3, vertices);
-
-
-		indices.push_back(0);
-		indices.push_back(2);
-		indices.push_back(3);
-		add_triangle(0, 2, 3, vertices);
-
-
-		indices.push_back(1);
-		indices.push_back(2);
-		indices.push_back(3);
-		add_triangle(1, 2, 3, vertices);
-
+		make_triangle_indices(0, 1, 2, indices, vertices);
+		make_triangle_indices(0, 1, 3, indices, vertices);
+		make_triangle_indices(0, 2, 3, indices, vertices);
+		make_triangle_indices(1, 2, 3, indices, vertices);
 
 		meshes["road_point_" + to_string(i / 2)] = new Mesh("road_point_" + to_string(i / 2));
 		meshes["road_point_" + to_string(i / 2)]->InitFromData(vertices, indices);
@@ -366,7 +334,7 @@ void Tema2::Update(float deltaTimeSeconds)
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
-	camera->Set(glm::vec3(translateX, 15, translateZ), glm::vec3(translateX, 0, translateZ), glm::vec3(-1, 0, -1));
+	camera->Set(glm::vec3(translateX, 20, translateZ), glm::vec3(translateX, 0, translateZ), glm::vec3(-1, 0, -1));
 
 	render_road();
 	render_trees();
@@ -379,10 +347,6 @@ void Tema2::Update(float deltaTimeSeconds)
 void Tema2::FrameEnd()
 {
 	
-}
-
-void Tema2::MiniFrameEnd() {
-
 }
 
 void Tema2::MyRenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
