@@ -86,6 +86,21 @@ void make_triangle_indices(double x, double y, double z, vector<unsigned int> &i
 	add_triangle(x, y, z, vertices);
 }
 
+void make_parallel_trace(double width, vector<pair<double, double>> &trace) {
+	int n = first_road_points.size();
+	for (int i = 0; i < n - 1; ++i) {
+		pair<double, double> direction = { first_road_points[i + 1].first - first_road_points[i].first, first_road_points[i + 1].second - first_road_points[i].second };
+		pair<double, double> product = { -direction.second, direction.first };
+		product.first /= distance(first_road_points[i], first_road_points[i + 1]);
+		product.second /= distance(first_road_points[i], first_road_points[i + 1]);
+
+		pair<double, double> exterior_point = { first_road_points[i].first + width * product.first, first_road_points[i].second + width * product.second };
+
+		trace.push_back(exterior_point);
+	}
+	trace.push_back({ trace[0].first, trace[0].second });
+}
+
 void Tema2::create_road() {
 
 	vector<VertexFormat> vertices;
@@ -93,20 +108,7 @@ void Tema2::create_road() {
 
 	first_road_points.push_back({ first_road_points[0].first, first_road_points[0].second });
 	int n = first_road_points.size();
-
-	for (int i = 0; i < n - 1; ++i) {
-		pair<double, double> direction = { first_road_points[i + 1].first - first_road_points[i].first, first_road_points[i + 1].second - first_road_points[i].second};
-		pair<double, double> product = { -direction.second, direction.first };
-		product.first /= distance(first_road_points[i], first_road_points[i + 1]);
-		product.second /= distance(first_road_points[i], first_road_points[i + 1]);
-
-		pair<double, double> exterior_point = { first_road_points[i].first + 1.5 * product.first, first_road_points[i].second + 1.5 * product.second };
-
-		second_road_points.push_back(exterior_point);
-	}
-	second_road_points.push_back({ second_road_points[0].first, second_road_points[0].second });
-
-
+	make_parallel_trace(1.5f, second_road_points);
 	for (int i = 0; i < n - 1; ++i) {
 		vertices.clear();
 		indices.clear();
