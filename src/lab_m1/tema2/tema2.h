@@ -40,6 +40,9 @@ namespace m1
         void Tema2::update_camera();
         void Tema2::update_truck();
         void Tema2::render_ground();
+        void Tema2::create_obstacles();
+        void Tema2::render_obstacles();
+        void Tema2::update_obstacles_points();
         void Tema2::create_parallelepiped(std :: string name, double point1_x, double point1_y, double point2_x, double point2_y, double height1, double height2, glm::vec3 color);
 		void extract_road_points(std :: vector<std :: pair<double, double>> &first_road_line) {
             first_road_line.push_back({ -0.50000000000000000, -0.00000000000000000 });
@@ -251,12 +254,10 @@ namespace m1
             first_road_line.push_back({ 2.08477163809356547, 2.58439827295877178 });
             first_road_line.push_back({ 0.65482800180872580, 1.68406339085350143 });
 
-
 		}
 
     protected:
         Camera *camera;
-        Camera* minimap_camera;
         glm::mat4 main_transform;
         glm::mat4 ground_transformation;
         glm::mat4 projectionMatrix;
@@ -265,10 +266,7 @@ namespace m1
         float initial_camera_Y;
         float initial_camera_Z;
         GLenum polygonMode;
-        GLfloat translateZSine, translateXSine, translateYSine;
-        GLfloat angleX, angleZ;
-        GLfloat posX, posZ, angle;
-        GLfloat angleJump;
+        double obstacle_speed;
         GLfloat truck_speed = 2.5;
         GLfloat rotation_angle_OY = 0;
         ViewportArea miniViewportArea;

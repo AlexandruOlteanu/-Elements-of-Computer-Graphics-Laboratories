@@ -162,11 +162,11 @@ bool in_triangle(pair<double, double> car_point, pair<double, double> A, pair<do
 	return 0;
 }
 
-bool check_on_road(double x, double y) {
+bool check_on_road(pair<double, double> car_point) {
 
 	int sz = triangles.size();
 	for (int i = 0; i < sz; ++i) {
-		if (in_triangle({ x, y }, triangles[i].A, triangles[i].B, triangles[i].C)) {
+		if (in_triangle(car_point, triangles[i].A, triangles[i].B, triangles[i].C)) {
 			return 1;
 		}
 	}
@@ -265,17 +265,96 @@ void Tema2::render_trees() {
 	}
 }
 
+vector < vector<pair<double, double>>> obstacle_traces;
+vector<int> spawn_points;
+vector<pair<double, double>> current_translate;
+vector<double> obstacle_rotation_angles;
+vector<glm::vec3> obstacles_colors;
+vector<int> current_obstacle_position;
 
+void Tema2::create_obstacles() {
+
+	for (double x = 10; x <= 90; x += 10) {
+		vector<pair<double, double>> current_trace;
+		make_parallel_trace(x / 100 * 1.5f, current_trace);
+		obstacle_traces.push_back(current_trace);
+	}
+	obstacles_colors.push_back(glm::vec3(1, 0.7529f, 0.796f));
+	obstacles_colors.push_back(glm::vec3(1, 1, 0));
+	obstacles_colors.push_back(glm::vec3(0, 1, 1));
+	obstacles_colors.push_back(glm::vec3(0.956f, 0.643f, 0.376f));
+	obstacles_colors.push_back(glm::vec3(0.541f, 0.168f, 0.886f));
+	obstacles_colors.push_back(glm::vec3(0, 0, 1));
+	obstacles_colors.push_back(glm::vec3(1, 0.549f, 0));
+	obstacles_colors.push_back(glm::vec3(0.5f, 0, 0));
+	obstacles_colors.push_back(glm::vec3(1, 0.87f, 0.678f));
+
+	for (int i = 0; i < obstacle_traces.size(); ++i) {
+		create_parallelepiped("obstacle_" + to_string(i), -0.1, 0.2, 0.1, -0.2, 0.2, 0.34, obstacles_colors[i]);
+		int spawn_point = (i + 1) * 22;
+		current_translate.push_back(obstacle_traces[i][spawn_point]);
+		current_obstacle_position.push_back(spawn_point);
+		obstacle_rotation_angles.push_back(0);
+	}
+}
+
+void Tema2::render_obstacles() {
+	
+	for (int i = 0; i < obstacle_traces.size(); ++i) {
+		
+		glm::mat4 obstacle_transformation = glm::mat4(1);
+		obstacle_transformation *= transform3D::Translate(current_translate[i].first, 0, current_translate[i].second);
+		obstacle_transformation *= transform3D::RotateOY(obstacle_rotation_angles[i]);
+		MyRenderMesh(meshes["obstacle_" + to_string(i)], shaders["VertexColor"], obstacle_transformation);
+	}
+}
+
+void Tema2::update_obstacles_points() {
+
+	for (int i = 0; i < obstacle_traces.size(); ++i) {
+		pair<double, double> past_point;
+		int p = current_obstacle_position[i];
+		if (p + 1 < first_road_points.size()) {
+			++p;
+		}
+		else {
+			p = 0;
+		}
+		if (distance(current_translate[i], obstacle_traces[i][current_obstacle_position[i]]) < 1e-7) {
+			p = current_obstacle_position[i];
+			if (current_obstacle_position[i] > 0) {
+				--current_obstacle_position[i];	
+			}
+			else {
+				current_obstacle_position[i] = first_road_points.size() - 1;
+			}
+		}
+		past_point = obstacle_traces[i][p];
+		pair<double, double> future_point = { obstacle_traces[i][current_obstacle_position[i]].first, obstacle_traces[i][current_obstacle_position[i]].second };
+		pair<double, double> direction = { future_point.first - past_point.first, future_point.second - past_point.second };
+		double x = direction.first;
+		double y = direction.second;
+
+		current_translate[i].first += x * obstacle_speed;
+		current_translate[i].second += y * obstacle_speed;
+		double angle = atan2(direction.second, direction.first);
+		if (angle < 0) {
+			angle += 2 * M_PI;
+		}
+		obstacle_rotation_angles[i] = -angle + M_PI_2;
+	}
+
+}
 
 
 void Tema2::Init()
 {
 	camera = new Camera();
-	minimap_camera = new Camera();
 	extract_road_points(first_road_points);
 	create_road();
 	create_trees();
 	find_trees_points();
+	create_obstacles();
 
 	create_parallelepiped("ground", -200, 200, 200, -200, 0.1, 0.1, glm::vec3(0, 1, 1));
 	create_parallelepiped("truck", -0.1, 0.2, 0.1, -0.2, 0.2, 0.34, glm::vec3(1, 0, 0));
@@ -287,6 +366,8 @@ void Tema2::Init()
 	initial_camera_X = 0;
 	initial_camera_Y = 0.6;
 	initial_camera_Z = 0.9f;
+
+	obstacle_speed = 1 / 30.;
 
 	glm::ivec2 resolution = window->GetResolution();
 	miniViewportArea = ViewportArea(50, 50, resolution.x / 3.f, resolution.y / 3.f);
@@ -331,6 +412,15 @@ void Tema2::update_truck() {
 	MyRenderMesh(meshes["truck"], shaders["VertexColor"], main_transform);
 }
 
+bool obstacle_intersection(pair<double, double> car_point) {
+	for (auto obstacle_point : current_translate) {
+		if (distance(car_point, obstacle_point) < 0.3) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 void Tema2::render_ground() {
 	ground_transformation = glm::mat4(1);
 	MyRenderMesh(meshes["ground"], shaders["VertexNormal"], ground_transformation);
@@ -339,12 +429,13 @@ void Tema2::render_ground() {
 void Tema2::Update(float deltaTimeSeconds)
 {
 	projectionMatrix = glm::perspective(RADIANS(80), window->props.aspectRatio, 0.01f, 200.0f);
-	//DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
 	update_camera();
 	render_road();
 	render_trees();
 	render_ground();
 	update_truck();
+	update_obstacles_points();
+	render_obstacles();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
@@ -354,7 +445,7 @@ void Tema2::Update(float deltaTimeSeconds)
 	render_trees();
 	render_ground();
 	update_truck();
-
+	render_obstacles();
 }
 
 void Tema2::OnInputUpdate(float deltaTime, int mods)
@@ -367,7 +458,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 		{
 			new_translate_Z += truck_speed * cos(rotation_angle_OY) * deltaTime;
 			new_translate_X += truck_speed * sin(rotation_angle_OY) * deltaTime;
-			if (check_on_road(new_translate_X, new_translate_Z)) {
+			if (check_on_road({ new_translate_X, new_translate_Z }) && !obstacle_intersection({ new_translate_X, new_translate_Z })) {
 				translateX = new_translate_X;
 				translateZ = new_translate_Z;
 			}
@@ -376,12 +467,12 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 		{
 			new_translate_Z -= truck_speed * cos(rotation_angle_OY) * deltaTime;
 			new_translate_X -= truck_speed * sin(rotation_angle_OY) * deltaTime;
-			if (check_on_road(new_translate_X, new_translate_Z)) {
+			if (check_on_road({new_translate_X, new_translate_Z}) && !obstacle_intersection({ new_translate_X, new_translate_Z })) {
 				translateX = new_translate_X;
 				translateZ = new_translate_Z;
 			}
 		}
-		if (window->KeyHold(GLFW_KEY_D))
+		if (window->KeyHold(GLFW_KEY_D) && !obstacle_intersection({ translateX, translateY }))
 		{
 			if (window->KeyHold(GLFW_KEY_W)) {
 				rotation_angle_OY -= deltaTime;
@@ -393,7 +484,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 				rotation_angle_OY -= deltaTime;
 			}
 		}
-		if (window->KeyHold(GLFW_KEY_A))
+		if (window->KeyHold(GLFW_KEY_A)&& !obstacle_intersection({ translateX, translateY }))
 		{
 			if (window->KeyHold(GLFW_KEY_W)) {
 				rotation_angle_OY += deltaTime;
@@ -445,17 +536,11 @@ void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 		float sensivityOY = 0.001f;
 
 		if (window->GetSpecialKeyState() == 0) {
-			// TODO(student): Rotate the camera in first-person mode around
-			// OX and OY using `deltaX` and `deltaY`. Use the sensitivity
-			// variables for setting up the rotation speed.
 			camera->RotateFirstPerson_OX(sensivityOX * -deltaY);
 			camera->RotateFirstPerson_OY(sensivityOY * -deltaX);
 		}
 
 		if (window->GetSpecialKeyState() & GLFW_MOD_CONTROL) {
-			// TODO(student): Rotate the camera in third-person mode around
-			// OX and OY using `deltaX` and `deltaY`. Use the sensitivity
-			// variables for setting up the rotation speed.
 			camera->RotateThirdPerson_OX(sensivityOX * -deltaY);
 			camera->RotateThirdPerson_OY(sensivityOY * -deltaX);
 		}
